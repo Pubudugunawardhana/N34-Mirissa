@@ -3,7 +3,7 @@ import Image from "next/image";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50" suppressHydrationWarning>
       {/* Navigation */}
       <nav className="absolute top-0 w-full z-50 bg-white/80 backdrop-blur-md shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
@@ -32,11 +32,12 @@ export default function Home() {
       {/* Hero Section */}
       <section className="relative h-screen flex items-center justify-center overflow-hidden">
         {/* We use a placeholder image for the hero background. The user can replace this later with a real Mirissa beach photo */}
-        <div className="absolute inset-0 z-0 bg-ocean-900">
-          <img 
-            src="https://images.unsplash.com/photo-1599839619722-39751411ea63?q=80&w=2574&auto=format&fit=crop" 
-            alt="Mirissa Beach" 
-            className="w-full h-full object-cover opacity-60"
+        <div className="absolute inset-0 z-0 bg-ocean-900 pointer-events-none overflow-hidden">
+          <iframe
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[300vw] h-[300vh] min-w-full min-h-full opacity-50"
+            src="https://www.youtube.com/embed/2x7VaiWa-60?autoplay=1&mute=1&controls=0&showinfo=0&autohide=1&loop=1&playlist=2x7VaiWa-60&playsinline=1"
+            allow="autoplay; encrypted-media"
+            title="Background Video"
           />
         </div>
         
@@ -64,7 +65,7 @@ export default function Home() {
       </section>
 
       {/* Booking Widget (Floating) */}
-      <div className="relative z-20 max-w-5xl mx-auto -mt-16 px-4">
+      <div className="relative z-20 max-w-5xl mx-auto -mt-16 px-4" suppressHydrationWarning>
         <div className="bg-white rounded-2xl shadow-xl p-6 md:p-8 flex flex-col md:flex-row gap-4 items-end border border-slate-100">
           <div className="w-full md:w-1/4">
             <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Check In</label>
@@ -97,23 +98,23 @@ export default function Home() {
           <h2 className="text-3xl font-bold text-ocean-900 mb-12">Why Choose N34 Mirissa?</h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-              <div className="w-14 h-14 bg-ocean-50 text-ocean-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl">
+              <span className="w-14 h-14 bg-ocean-50 text-ocean-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl" suppressHydrationWarning>
                 🌊
-              </div>
+              </span>
               <h3 className="text-xl font-bold text-slate-800 mb-3">Oceanfront Views</h3>
               <p className="text-slate-500 text-sm leading-relaxed">Wake up to the sound of waves and breathtaking views of the Indian Ocean right from your balcony.</p>
             </div>
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-              <div className="w-14 h-14 bg-sand-50 text-sand-500 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl">
+              <span className="w-14 h-14 bg-sand-50 text-sand-500 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl" suppressHydrationWarning>
                 ✨
-              </div>
+              </span>
               <h3 className="text-xl font-bold text-slate-800 mb-3">Luxury Amenities</h3>
               <p className="text-slate-500 text-sm leading-relaxed">From premium bedding to high-speed WiFi, we provide everything you need for a comfortable stay.</p>
             </div>
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
-              <div className="w-14 h-14 bg-ocean-50 text-ocean-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl">
+              <span className="w-14 h-14 bg-ocean-50 text-ocean-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl" suppressHydrationWarning>
                 🍽️
-              </div>
+              </span>
               <h3 className="text-xl font-bold text-slate-800 mb-3">Exquisite Dining</h3>
               <p className="text-slate-500 text-sm leading-relaxed">Savor authentic Sri Lankan seafood and international cuisines at our ocean-view restaurant.</p>
             </div>

@@ -1,10 +1,18 @@
 import Link from "next/link";
+import { auth, signOut } from "@/auth";
+import { redirect } from "next/navigation";
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const session = await auth();
+
+  if (!session?.user) {
+    redirect('/login');
+  }
+
   return (
     <div className="flex h-screen bg-slate-50">
       {/* Sidebar */}
@@ -35,9 +43,14 @@ export default function AdminLayout({
         </nav>
         
         <div className="p-4 border-t border-white/10">
-          <button className="w-full bg-white/10 hover:bg-white/20 text-white text-sm font-medium py-2 rounded-lg transition-colors">
-            Sign Out
-          </button>
+          <form action={async () => {
+            'use server';
+            await signOut({ redirectTo: '/login' });
+          }}>
+            <button className="w-full bg-white/10 hover:bg-white/20 text-white text-sm font-medium py-2 rounded-lg transition-colors">
+              Sign Out
+            </button>
+          </form>
         </div>
       </aside>
 
@@ -46,9 +59,12 @@ export default function AdminLayout({
         <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 shadow-sm">
           <h1 className="text-xl font-semibold text-slate-800">Overview</h1>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-slate-500">Admin User</span>
-            <div className="w-10 h-10 bg-ocean-100 rounded-full flex items-center justify-center text-ocean-700 font-bold">
-              A
+            <div className="flex flex-col text-right">
+              <span className="text-sm font-semibold text-slate-700">{session.user.name}</span>
+              <span className="text-xs text-slate-500 capitalize">{session.user.role?.toLowerCase()}</span>
+            </div>
+            <div className="w-10 h-10 bg-ocean-100 rounded-full flex items-center justify-center text-ocean-700 font-bold uppercase">
+              {session.user.name?.[0] || 'U'}
             </div>
           </div>
         </header>
