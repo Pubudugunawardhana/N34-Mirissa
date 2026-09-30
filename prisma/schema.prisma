@@ -1,0 +1,223 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// USER & AUTHENTICATION
+// ==========================================
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  role          Role      @default(CUSTOMER)
+  status        Status    @default(ACTIVE)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  bookings      Booking[]
+  reviews       Review[]
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+  GUEST
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+// ==========================================
+// ROOMS & FACILITIES
+// ==========================================
+model Room {
+  id          String   @id @default(cuid())
+  name        String
+  area        Int
+  capacity    Int
+  price       Float
+  quantity    Int
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  images      RoomImage[]
+  bookings    Booking[]
+  features    RoomFeature[]
+  facilities  RoomFacility[]
+}
+
+model RoomImage {
+  id        String   @id @default(cuid())
+  url       String
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+model Feature {
+  id          String        @id @default(cuid())
+  name        String
+  description String?
+  rooms       RoomFeature[]
+}
+
+model RoomFeature {
+  roomId    String
+  featureId String
+  room      Room    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  feature   Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, featureId])
+}
+
+model Facility {
+  id          String         @id @default(cuid())
+  icon        String?
+  name        String
+  description String?
+  rooms       RoomFacility[]
+}
+
+model RoomFacility {
+  roomId     String
+  facilityId String
+  room       Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, facilityId])
+}
+
+// ==========================================
+// BOOKINGS & PAYMENTS
+// ==========================================
+model Booking {
+  id            String        @id @default(cuid())
+  userId        String
+  roomId        String
+  checkIn       DateTime
+  checkOut      DateTime
+  totalAmount   Float
+  paymentStatus PaymentStatus @default(PENDING)
+  bookingStatus BookingStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user          User          @relation(fields: [userId], references: [id])
+  room          Room          @relation(fields: [roomId], references: [id])
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  REFUNDED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+// ==========================================
+// REVIEWS & CONTACT
+// ==========================================
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  content   String
+  userId    String
+  roomId    String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  subject   String?
+  message   String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+// ==========================================
+// HOTEL MANAGEMENT (Experiences, Dining, Weddings)
+// ==========================================
+model Experience {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  price       Float?
+  duration    String?
+  guideName   String?
+  phone       String?
+  email       String?
+  images      String[] // Stored as JSON array or simple text array in Postgres
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Dining {
+  id          String   @id @default(cuid())
+  name        String
+  type        String
+  openingHours String?
+  location    String?
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model WeddingPackage {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  venueDetails String?
+  diningOptions String?
+  features    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==========================================
+// INVENTORY
+// ==========================================
+model Equipment {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  quantity  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==========================================
+// SETTINGS
+// ==========================================
+model Setting {
+  id          String   @id @default("1")
+  siteTitle   String   @default("N34 Mirissa")
+  aboutUs     String?
+  contactTitle String?
+  googleMap   String?
+  phone       String?
+  email       String?
+  facebookUrl String?
+  instagramUrl String?
+  isMaintenance Boolean @default(false)
+  updatedAt   DateTime @updatedAt
+}
