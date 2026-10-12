@@ -21,7 +21,7 @@ export async function createBooking(formData: FormData) {
       checkIn: new Date(checkInStr),
       checkOut: new Date(checkOutStr),
       totalAmount: parseFloat(amountStr),
-      status: 'PENDING',
+      bookingStatus: 'PENDING',
       paymentStatus: 'PENDING',
     }
   });
@@ -29,3 +29,5 @@ export async function createBooking(formData: FormData) {
   // Redirect to a placeholder payment processing page or user dashboard
   redirect(`/user?bookingSuccess=` + booking.id);
 }
+
+

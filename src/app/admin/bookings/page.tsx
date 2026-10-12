@@ -34,7 +34,7 @@ export default async function AdminBookings() {
                   {new Date(b.checkIn).toLocaleDateString()} - {new Date(b.checkOut).toLocaleDateString()}
                 </td>
                 <td className='p-4'>
-                  <span className='px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-medium'>{b.status}</span>
+                  <span className='px-2 py-1 bg-orange-100 text-orange-800 text-xs rounded-full font-medium'>{b.bookingStatus}</span>
                 </td>
                 <td className='p-4 space-x-2 text-sm'>
                   <button className='text-emerald-600 font-medium'>Confirm</button>
@@ -48,3 +48,4 @@ export default async function AdminBookings() {
     </div>
   );
 }
+
