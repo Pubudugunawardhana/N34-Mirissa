@@ -69,6 +69,9 @@ model Room {
   price       Float
   quantity    Int
   description String?
+  maxAdults   Int      @default(2)
+  maxChildren Int      @default(0)
+  isActive    Boolean  @default(true) // false hides the room from guests
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -81,6 +84,8 @@ model Room {
 model RoomImage {
   id        String   @id @default(cuid())
   url       String
+  publicId  String?  // Cloudinary id, needed to delete the file
+  position  Int      @default(0) // lowest is the cover photo
   roomId    String
   room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
 }
@@ -128,6 +133,16 @@ model Booking {
   checkIn       DateTime
   checkOut      DateTime
   totalAmount   Float
+  reference     String        @unique @default(cuid())
+  guestName     String        @default("")
+  phone         String        @default("")
+  address       String        @default("")
+  adults        Int           @default(1)
+  children      Int           @default(0)
+  mealPlan      MealPlan      @default(ROOM_ONLY)
+  specialRequests String?
+  pricePerNight Float         @default(0) // room price when the booking was made
+  mealTotal     Float         @default(0)
   paymentStatus PaymentStatus @default(PENDING)
   bookingStatus BookingStatus @default(PENDING)
   createdAt     DateTime      @default(now())
@@ -135,6 +150,15 @@ model Booking {
 
   user          User          @relation(fields: [userId], references: [id])
   room          Room          @relation(fields: [roomId], references: [id])
+
+  @@index([roomId, checkIn, checkOut])
+}
+
+enum MealPlan {
+  ROOM_ONLY
+  BED_AND_BREAKFAST
+  HALF_BOARD
+  FULL_BOARD
 }
 
 enum PaymentStatus {
