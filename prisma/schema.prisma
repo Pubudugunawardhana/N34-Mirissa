@@ -24,6 +24,27 @@ model User {
 
   bookings      Booking[]
   reviews       Review[]
+  authTokens    AuthToken[]
+}
+
+// One-time links for email verification and password reset.
+// Only the SHA-256 hash is stored; the raw token lives in the emailed link.
+model AuthToken {
+  id        String        @id @default(cuid())
+  userId    String
+  type      AuthTokenType
+  tokenHash String        @unique
+  expiresAt DateTime
+  createdAt DateTime      @default(now())
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+}
+
+enum AuthTokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
 }
 
 enum Role {
