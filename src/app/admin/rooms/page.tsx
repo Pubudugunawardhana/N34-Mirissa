@@ -51,9 +51,9 @@ export default async function AdminRoomsPage() {
           <h1 className="text-2xl font-bold text-slate-800">Rooms Management</h1>
           <p className="text-sm text-slate-500 mt-1">Manage all available rooms, pricing, and inventory.</p>
         </div>
-        <button className="bg-ocean-600 hover:bg-ocean-700 text-white px-5 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-sm shadow-ocean-600/20">
+        <Link href="/admin/rooms/new" className="bg-ocean-600 hover:bg-ocean-700 text-white px-5 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-sm shadow-ocean-600/20">
           + Add New Room
-        </button>
+        </Link>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
