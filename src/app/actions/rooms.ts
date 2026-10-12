@@ -24,7 +24,7 @@ export async function createRoom(formData: FormData) {
       },
     });
   } catch (error) {
-    return { message: 'Database Error: Failed to Create Room.' };
+    throw new Error('Failed to create room');
   }
 
   revalidatePath('/admin/rooms');
@@ -41,3 +41,4 @@ export async function deleteRoom(id: string) {
     return { message: 'Database Error: Failed to Delete Room.' };
   }
 }
+
