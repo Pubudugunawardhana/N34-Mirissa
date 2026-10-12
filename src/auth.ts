@@ -1,9 +1,17 @@
-import NextAuth from 'next-auth';
+import NextAuth, { CredentialsSignin } from 'next-auth';
 import { authConfig } from './auth.config';
 import Credentials from 'next-auth/providers/credentials';
-import { z } from 'zod';
-import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
+import { findUserByEmail } from '@/lib/users';
+import { LoginSchema, isEmailVerificationRequired } from '@/lib/validation';
+
+export class EmailNotVerifiedError extends CredentialsSignin {
+  code = 'email_not_verified';
+}
+
+export class AccountDisabledError extends CredentialsSignin {
+  code = 'account_disabled';
+}
 
 export const { auth, signIn, signOut, handlers: { GET, POST } } = NextAuth({
   ...authConfig,
@@ -11,29 +19,29 @@ export const { auth, signIn, signOut, handlers: { GET, POST } } = NextAuth({
   providers: [
     Credentials({
       async authorize(credentials) {
-        const parsedCredentials = z
-          .object({ email: z.string().email(), password: z.string().min(6) })
-          .safeParse(credentials);
+        const parsedCredentials = LoginSchema.safeParse(credentials);
+        if (!parsedCredentials.success) return null;
 
-        if (parsedCredentials.success) {
-          const { email, password } = parsedCredentials.data;
-          const user = await prisma.user.findUnique({ where: { email } });
-          
-          if (!user || !user.password) return null;
-          
-          const passwordsMatch = await bcrypt.compare(password, user.password);
-          if (passwordsMatch) {
-            return {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              role: user.role
-            };
-          }
+        const { email, password } = parsedCredentials.data;
+        const user = await findUserByEmail(email);
+
+        if (!user || !user.password) return null;
+
+        const passwordsMatch = await bcrypt.compare(password, user.password);
+        if (!passwordsMatch) return null;
+
+        // Checked only after the password matches, so these messages never confirm an account to a stranger.
+        if (user.status === 'INACTIVE') throw new AccountDisabledError();
+        if (isEmailVerificationRequired() && !user.emailVerified) {
+          throw new EmailNotVerifiedError();
         }
 
-        console.log('Invalid credentials');
-        return null;
+        return {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        };
       },
     }),
   ],
