@@ -89,7 +89,7 @@ export default async function AdminBookings({ searchParams }: PageProps<'/admin/
                       </td>
                       <td className='p-4'>
                         <p className='font-medium'>{b.guestName || b.user.name}</p>
-                        <p className='text-xs text-slate-500'>{b.user.email}</p>
+                        <p className='text-xs text-slate-500'>{b.email || b.user.email}</p>
                         {b.phone && <p className='text-xs text-slate-500'>{b.phone}</p>}
                       </td>
                       <td className='p-4 text-sm'>
@@ -111,6 +111,7 @@ export default async function AdminBookings({ searchParams }: PageProps<'/admin/
                       </td>
                       <td className='p-4 text-sm'>
                         <div className='flex flex-col items-start gap-2'>
+                          <a href={`/admin/bookings/${b.id}/email`} target='_blank' rel='noopener' className={`${actionClass} text-slate-500 hover:text-slate-700`}>View email</a>
                           {b.bookingStatus === 'PENDING' && (
                             <form action={setBookingStatus.bind(null, b.id, 'CONFIRMED')}>
                               <button className={`${actionClass} text-emerald-600 hover:text-emerald-800`}>Confirm</button>
