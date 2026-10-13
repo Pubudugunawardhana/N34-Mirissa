@@ -3,39 +3,55 @@
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import { sendVerificationEmail } from '@/lib/mail';
+import { createAuthToken } from '@/lib/tokens';
+import { findUserByEmail } from '@/lib/users';
+import { RegisterSchema, isEmailVerificationRequired, type FieldErrors } from '@/lib/validation';
 
-const RegisterSchema = z.object({
-  name: z.string().min(2, "Name must be at least 2 characters long"),
-  email: z.string().email("Please enter a valid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters long"),
-});
+export type RegisterState = {
+  success?: boolean;
+  message?: string;
+  errors?: FieldErrors;
+  values?: { name: string; email: string };
+  email?: string;
+  verificationRequired?: boolean;
+};
 
 export async function registerUser(
-  prevState: any,
+  prevState: RegisterState,
   formData: FormData,
-) {
+): Promise<RegisterState> {
+  const values = {
+    name: String(formData.get('name') ?? ''),
+    email: String(formData.get('email') ?? ''),
+  };
+
   const validatedFields = RegisterSchema.safeParse({
-    name: formData.get('name'),
-    email: formData.get('email'),
+    ...values,
     password: formData.get('password'),
+    confirmPassword: formData.get('confirmPassword'),
   });
 
   if (!validatedFields.success) {
     return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: 'Missing or invalid fields. Failed to register.',
+      errors: z.flattenError(validatedFields.error).fieldErrors,
+      message: 'Please fix the highlighted fields.',
+      values,
     };
   }
 
   const { name, email, password } = validatedFields.data;
 
+  let userId: string;
   try {
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
-    });
+    const existingUser = await findUserByEmail(email);
 
     if (existingUser) {
-      return { message: 'User with this email already exists.' };
+      return {
+        errors: { email: ['An account with this email already exists.'] },
+        message: 'An account with this email already exists. Try signing in instead.',
+        values,
+      };
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -45,7 +61,7 @@ export async function registerUser(
     const userCount = await prisma.user.count();
     const role = userCount === 0 ? 'ADMIN' : 'CUSTOMER';
 
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         name,
         email,
@@ -53,9 +69,24 @@ export async function registerUser(
         role: role, // The first user gets ADMIN privileges
       },
     });
-
-    return { success: true, message: 'Registration successful! You can now log in.' };
+    userId = user.id;
   } catch (error) {
-    return { message: 'Database Error: Failed to Create User.' };
+    console.error('Failed to create user', error);
+    return { message: 'Something went wrong while creating your account. Please try again.', values };
   }
+
+  // The account exists at this point; a failed email can be retried with "resend".
+  try {
+    const token = await createAuthToken(userId, 'EMAIL_VERIFICATION');
+    await sendVerificationEmail(email, token);
+  } catch (error) {
+    console.error('Failed to send verification email', error);
+  }
+
+  return {
+    success: true,
+    email,
+    verificationRequired: isEmailVerificationRequired(),
+    message: 'Your account has been created.',
+  };
 }
