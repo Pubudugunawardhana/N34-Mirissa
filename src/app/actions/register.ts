@@ -3,7 +3,7 @@
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
-import { sendVerificationEmail } from '@/lib/mail';
+import { isMailConfigured, sendVerificationEmail } from '@/lib/mail';
 import { createAuthToken } from '@/lib/tokens';
 import { findUserByEmail } from '@/lib/users';
 import { RegisterSchema, isEmailVerificationRequired, type FieldErrors } from '@/lib/validation';
@@ -15,6 +15,8 @@ export type RegisterState = {
   values?: { name: string; email: string };
   email?: string;
   verificationRequired?: boolean;
+  // True on a developer machine with no mail account set up: the link is in the server console, not in an inbox.
+  linkInConsole?: boolean;
 };
 
 export async function registerUser(
@@ -87,6 +89,7 @@ export async function registerUser(
     success: true,
     email,
     verificationRequired: isEmailVerificationRequired(),
+    linkInConsole: process.env.NODE_ENV !== 'production' && !isMailConfigured(),
     message: 'Your account has been created.',
   };
 }
