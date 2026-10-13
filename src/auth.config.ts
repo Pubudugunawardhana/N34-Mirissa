@@ -18,9 +18,13 @@ export const authConfig = {
       const { pathname } = nextUrl;
 
       if (matches(pathname, ['/admin'])) {
-        if (!isLoggedIn) return false; // Redirect unauthenticated users to login page
-        if (!isAdmin) return Response.redirect(new URL('/', nextUrl));
+        // Staff have their own sign-in page, separate from the guest one.
+        if (!isAdmin) return Response.redirect(new URL('/admin-login', nextUrl));
         return true;
+      }
+
+      if (pathname === '/admin-login' && isAdmin) {
+        return Response.redirect(new URL('/admin', nextUrl));
       }
 
       if (matches(pathname, SIGNED_IN_ROUTES)) return isLoggedIn;
