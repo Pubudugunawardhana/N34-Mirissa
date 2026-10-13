@@ -1,48 +1,30 @@
 import prisma from '@/lib/prisma';
+import Image from 'next/image';
 import Link from 'next/link';
+import { deleteRoom, toggleRoomActive } from '@/app/actions/rooms';
+import Alert from '@/components/auth/Alert';
+import ConfirmSubmitButton from '@/components/ConfirmSubmitButton';
+import { formatLKR, guestSummary } from '@/lib/booking';
 
 export const dynamic = 'force-dynamic';
 
-export default async function AdminRoomsPage() {
-  // Check if we have rooms, if not, let's create a couple of sample rooms for the demo
-  let rooms = await prisma.room.findMany({
-    orderBy: { createdAt: 'desc' }
-  });
+const NOTICES: Record<string, { variant: 'success' | 'error'; text: string }> = {
+  saved: { variant: 'success', text: 'Room saved.' },
+  deleted: { variant: 'success', text: 'Room deleted.' },
+  'has-bookings': {
+    variant: 'error',
+    text: 'This room has bookings, so it cannot be deleted. Mark it as hidden instead to stop new bookings.',
+  },
+};
 
-  if (rooms.length === 0) {
-    await prisma.room.createMany({
-      data: [
-        {
-          name: 'Ocean View Suite',
-          area: 450,
-          capacity: 2,
-          price: 150.00,
-          quantity: 5,
-          description: 'A beautiful suite with a direct view of the Mirissa ocean. Includes a private balcony.',
-        },
-        {
-          name: 'Family Beach Villa',
-          area: 850,
-          capacity: 4,
-          price: 280.00,
-          quantity: 2,
-          description: 'Spacious villa perfect for families, located steps away from the beach.',
-        },
-        {
-          name: 'Standard Double Room',
-          area: 300,
-          capacity: 2,
-          price: 85.00,
-          quantity: 8,
-          description: 'Comfortable standard room with all essential luxury amenities.',
-        }
-      ]
-    });
-    // Re-fetch after seeding
-    rooms = await prisma.room.findMany({
-      orderBy: { createdAt: 'desc' }
-    });
-  }
+export default async function AdminRoomsPage({ searchParams }: PageProps<'/admin/rooms'>) {
+  const params = await searchParams;
+  const notice = typeof params.notice === 'string' ? NOTICES[params.notice] : undefined;
+
+  const rooms = await prisma.room.findMany({
+    include: { images: { orderBy: { position: 'asc' }, take: 1 }, _count: { select: { bookings: true } } },
+    orderBy: { createdAt: 'desc' },
+  });
 
   return (
     <div className="space-y-6">
@@ -56,60 +38,88 @@ export default async function AdminRoomsPage() {
         </Link>
       </div>
 
+      {notice && <Alert variant={notice.variant}>{notice.text}</Alert>}
+
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-slate-50 border-b border-slate-200">
-                <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Room Name</th>
-                <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Base Price</th>
-                <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Capacity</th>
-                <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Area (Sq.Ft)</th>
-                <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Qty</th>
-                <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {rooms.map((room) => (
-                <tr key={room.id} className="hover:bg-slate-50/50 transition-colors">
-                  <td className="py-4 px-6">
-                    <p className="font-medium text-slate-800">{room.name}</p>
-                    <p className="text-xs text-slate-500 truncate max-w-[250px]">{room.description}</p>
-                  </td>
-                  <td className="py-4 px-6 font-medium text-ocean-700">
-                    ${room.price.toFixed(2)}
-                  </td>
-                  <td className="py-4 px-6">
-                    <div className="flex items-center gap-1 text-slate-600 text-sm">
-                      <span className="w-4 h-4">👥</span> {room.capacity} Persons
-                    </div>
-                  </td>
-                  <td className="py-4 px-6 text-sm text-slate-600">
-                    {room.area}
-                  </td>
-                  <td className="py-4 px-6">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                      {room.quantity} Available
-                    </span>
-                  </td>
-                  <td className="py-4 px-6 text-right space-x-3 text-sm">
-                    <button className="font-medium text-ocean-600 hover:text-ocean-800 transition-colors">Edit</button>
-                    <button className="font-medium text-red-500 hover:text-red-700 transition-colors">Delete</button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        
-        {/* Pagination placeholder */}
-        <div className="px-6 py-4 border-t border-slate-200 flex items-center justify-between bg-slate-50">
-          <span className="text-sm text-slate-500">Showing <span className="font-medium">1</span> to <span className="font-medium">{rooms.length}</span> of <span className="font-medium">{rooms.length}</span> rooms</span>
-          <div className="flex gap-2">
-            <button className="px-3 py-1 border border-slate-300 rounded-md bg-white text-slate-600 text-sm hover:bg-slate-50 disabled:opacity-50">Previous</button>
-            <button className="px-3 py-1 border border-slate-300 rounded-md bg-white text-slate-600 text-sm hover:bg-slate-50 disabled:opacity-50">Next</button>
+        {rooms.length === 0 ? (
+          <div className="px-6 py-16 text-center">
+            <p className="font-medium text-slate-700">No rooms yet</p>
+            <p className="mt-1 text-sm text-slate-500">Add your first room to start taking bookings.</p>
           </div>
-        </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-200">
+                  <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Room</th>
+                  <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Price / night</th>
+                  <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Guests</th>
+                  <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Area</th>
+                  <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Qty</th>
+                  <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider">Availability</th>
+                  <th className="py-4 px-6 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {rooms.map((room) => (
+                  <tr key={room.id} className="hover:bg-slate-50/50 transition-colors">
+                    <td className="py-4 px-6">
+                      <div className="flex items-center gap-4">
+                        <div className="relative h-14 w-20 shrink-0 overflow-hidden rounded-lg bg-slate-100">
+                          {room.images[0] ? (
+                            <Image src={room.images[0].url} alt="" fill sizes="80px" className="object-cover" />
+                          ) : (
+                            <span className="absolute inset-0 flex items-center justify-center text-[10px] text-slate-400">No photo</span>
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-slate-800">{room.name}</p>
+                          <p className="text-xs text-slate-500">
+                            {room._count.bookings} {room._count.bookings === 1 ? 'booking' : 'bookings'}
+                          </p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="py-4 px-6 font-medium text-ocean-700 whitespace-nowrap">{formatLKR(room.price)}</td>
+                    <td className="py-4 px-6 text-sm text-slate-600 whitespace-nowrap">{guestSummary(room.maxAdults, room.maxChildren)}</td>
+                    <td className="py-4 px-6 text-sm text-slate-600 whitespace-nowrap">{room.area} sq ft</td>
+                    <td className="py-4 px-6 text-sm text-slate-600">{room.quantity}</td>
+                    <td className="py-4 px-6">
+                      <form action={toggleRoomActive.bind(null, room.id, !room.isActive)}>
+                        <button
+                          title={room.isActive ? 'Click to hide from guests' : 'Click to make available'}
+                          className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold ring-1 ring-inset transition-colors ${
+                            room.isActive
+                              ? 'bg-emerald-50 text-emerald-700 ring-emerald-200 hover:bg-emerald-100'
+                              : 'bg-slate-100 text-slate-600 ring-slate-200 hover:bg-slate-200'
+                          }`}
+                        >
+                          <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+                          {room.isActive ? 'Available' : 'Hidden'}
+                        </button>
+                      </form>
+                    </td>
+                    <td className="py-4 px-6 text-right text-sm whitespace-nowrap">
+                      <div className="flex items-center justify-end gap-4">
+                        <Link href={`/admin/rooms/${room.id}/edit`} className="font-medium text-ocean-600 hover:text-ocean-800 transition-colors">
+                          Edit
+                        </Link>
+                        <form action={deleteRoom.bind(null, room.id)}>
+                          <ConfirmSubmitButton
+                            confirmMessage={`Delete "${room.name}" and its photos? This cannot be undone.`}
+                            className="font-medium text-red-500 hover:text-red-700 transition-colors"
+                          >
+                            Delete
+                          </ConfirmSubmitButton>
+                        </form>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );
