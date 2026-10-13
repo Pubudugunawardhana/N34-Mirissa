@@ -1,15 +1,16 @@
 'use server';
 
-import { randomInt } from 'crypto';
+import { randomBytes, randomInt } from 'crypto';
 import { Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
+import { auth } from '@/auth';
 import { getRoomsLeft } from '@/lib/availability';
-import { formatLKR, formatStayDate, quoteBooking, todayDateOnly, validateStay } from '@/lib/booking';
+import { quoteBooking, todayDateOnly, validateStay } from '@/lib/booking';
+import { bookingAccess } from '@/lib/booking-access';
 import { sendBookingConfirmationEmail } from '@/lib/mail';
-import { requireUser } from '@/lib/session';
 import { BookingSchema, type FieldErrors } from '@/lib/validation';
 
 export type BookingFormState = {
@@ -42,13 +43,16 @@ export async function checkAvailability(roomId: string, checkIn: string, checkOu
 }
 
 export async function createBooking(prevState: BookingFormState, formData: FormData): Promise<BookingFormState> {
-  const user = await requireUser();
+  // Signing in is optional. Without an account the booking gets a secret key instead of an owner.
+  const session = await auth();
+  const userId = session?.user?.id ?? null;
+  const guestToken = userId ? null : randomBytes(24).toString('hex');
 
   const validatedFields = BookingSchema.safeParse({
     roomId: formData.get('roomId'),
     guestName: formData.get('guestName'),
+    email: formData.get('email'),
     phone: formData.get('phone'),
-    address: formData.get('address'),
     adults: formData.get('adults'),
     children: formData.get('children'),
     mealPlan: formData.get('mealPlan'),
@@ -67,7 +71,10 @@ export async function createBooking(prevState: BookingFormState, formData: FormD
 
   const { roomId, adults, children, mealPlan, specialRequests, ...guest } = validatedFields.data;
 
-  const room = await prisma.room.findFirst({ where: { id: roomId, isActive: true } });
+  const room = await prisma.room.findFirst({
+    where: { id: roomId, isActive: true },
+    include: { images: { orderBy: { position: 'asc' }, take: 1 } },
+  });
   if (!room) return { message: 'This room is no longer available.' };
 
   if (adults > room.maxAdults || children > room.maxChildren) {
@@ -90,7 +97,8 @@ export async function createBooking(prevState: BookingFormState, formData: FormD
           return tx.booking.create({
             data: {
               reference: newReference(),
-              userId: user.id,
+              userId,
+              guestToken,
               roomId: room.id,
               checkIn: stay.checkIn,
               checkOut: stay.checkOut,
@@ -110,17 +118,7 @@ export async function createBooking(prevState: BookingFormState, formData: FormD
       bookingId = booking.id;
 
       try {
-        if (user.email) {
-          await sendBookingConfirmationEmail({
-            to: user.email,
-            bookingId: booking.id,
-            reference: booking.reference,
-            guestName: booking.guestName,
-            roomName: room.name,
-            stay: `${formatStayDate(stay.checkIn)} to ${formatStayDate(stay.checkOut)}`,
-            total: formatLKR(booking.totalAmount),
-          });
-        }
+        await sendBookingConfirmationEmail(booking, { name: room.name, coverUrl: room.images[0]?.url });
       } catch (error) {
         console.error('Failed to send booking confirmation email', error);
       }
@@ -140,17 +138,22 @@ export async function createBooking(prevState: BookingFormState, formData: FormD
 
   revalidatePath('/user');
   revalidatePath('/admin/bookings');
-  redirect(`/book/confirmation/${bookingId}?new=1`);
+  redirect(`/book/confirmation/${bookingId}?new=1${guestToken ? `&key=${guestToken}` : ''}`);
 }
 
-export async function cancelBooking(bookingId: string) {
-  const user = await requireUser();
+// `key` is the secret from a guest booking's link; signed-in owners pass null.
+export async function cancelBooking(bookingId: string, key: string | null) {
+  const session = await auth();
+  const booking = await prisma.booking.findUnique({ where: { id: bookingId } });
 
-  // Guests can cancel their own bookings up to the day before check-in.
+  // Only the account that made the booking, or a guest holding its key, may cancel it.
+  const access = booking && bookingAccess(booking, session?.user, key);
+  if (access !== 'owner' && access !== 'guest') return;
+
+  // A booking can be cancelled up to the day before check-in.
   await prisma.booking.updateMany({
     where: {
       id: bookingId,
-      userId: user.id,
       bookingStatus: { not: 'CANCELLED' },
       checkIn: { gt: new Date(`${todayDateOnly()}T00:00:00.000Z`) },
     },
@@ -159,4 +162,26 @@ export async function cancelBooking(bookingId: string) {
 
   revalidatePath('/user');
   revalidatePath('/admin/bookings');
+  revalidatePath(`/book/confirmation/${bookingId}`);
+}
+
+export type FindBookingState = { message?: string };
+
+// Lets a guest without an account get back to a booking using what they know: its reference and their email.
+export async function findBooking(prevState: FindBookingState, formData: FormData): Promise<FindBookingState> {
+  const reference = String(formData.get('reference') ?? '').trim().toUpperCase();
+  const email = String(formData.get('email') ?? '').trim().toLowerCase();
+  if (!reference || !email) return { message: 'Enter your booking reference and the email you booked with.' };
+
+  const booking = await prisma.booking.findUnique({ where: { reference } });
+
+  // One answer for "no such reference" and "wrong email", so references cannot be checked one by one.
+  if (!booking || booking.email.toLowerCase() !== email) {
+    return { message: 'We could not find a booking with that reference and email. Please check both and try again.' };
+  }
+  if (!booking.guestToken) {
+    return { message: 'This booking was made with an account. Please sign in to see it under My Account.' };
+  }
+
+  redirect(`/book/confirmation/${booking.id}?key=${booking.guestToken}`);
 }
