@@ -1,15 +1,15 @@
 import type { Metadata } from "next";
-import { Geist_Mono, Playfair_Display, Plus_Jakarta_Sans } from "next/font/google";
+import { Geist_Mono, Poppins } from "next/font/google";
+import { cookies } from "next/headers";
+import { Suspense } from "react";
+import NavigationProgress from "@/components/NavigationProgress";
 import "./globals.css";
 
-const jakartaSans = Plus_Jakarta_Sans({
-  variable: "--font-jakarta-sans",
+// Poppins is not a variable font, so each weight the site uses is listed.
+const poppins = Poppins({
+  variable: "--font-poppins",
   subsets: ["latin"],
-});
-
-const playfairDisplay = Playfair_Display({
-  variable: "--font-playfair-display",
-  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700", "800"],
 });
 
 const geistMono = Geist_Mono({
@@ -22,14 +22,23 @@ export const metadata: Metadata = {
   description: "Experience the magic of Mirissa at N34 Resort.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // The chosen theme is kept in a cookie (see ThemeToggle) so the server can send the page already
+  // in dark mode: no white flash, and no inline script needed. Light is the default.
+  const theme = (await cookies()).get("theme")?.value === "dark" ? "dark" : undefined;
+
   return (
     <html
       lang="en"
-      className={`${jakartaSans.variable} ${playfairDisplay.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${poppins.variable} ${geistMono.variable} h-full antialiased`}
+      data-theme={theme}
       suppressHydrationWarning
     >
       <body className="min-h-full flex flex-col" suppressHydrationWarning>
+        {/* Suspense: the bar reads the address, which must not hold up the rest of the page. */}
+        <Suspense fallback={null}>
+          <NavigationProgress />
+        </Suspense>
         {children}
       </body>
     </html>

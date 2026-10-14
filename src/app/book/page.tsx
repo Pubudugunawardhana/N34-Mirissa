@@ -1,13 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { notFound, redirect } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import BookingForm from '@/components/booking/BookingForm';
 import RoomCover from '@/components/rooms/RoomCover';
 import SiteFooter from '@/components/SiteFooter';
 import SiteNav from '@/components/SiteNav';
 import { parseDateOnly } from '@/lib/booking';
 import prisma from '@/lib/prisma';
-import { requireUser } from '@/lib/session';
+import { auth } from '@/auth';
 
 export const metadata: Metadata = { title: 'Book a room | N34 Mirissa' };
 
@@ -21,19 +21,23 @@ function clamp(value: string | undefined, min: number, max: number, fallback: nu
 }
 
 export default async function BookPage({ searchParams }: PageProps<'/book'>) {
-  const sessionUser = await requireUser();
-  // Read fresh from the database: the saved phone number is not part of the login session.
-  const user = (await prisma.user.findUnique({ where: { id: sessionUser.id } })) ?? { name: sessionUser.name, email: sessionUser.email, phone: null };
-  const params = await searchParams;
+  // Booking does not need an account. A signed-in guest gets their saved details filled in
+  // (read fresh from the database: the phone number is not part of the login session).
+  const [session, params] = await Promise.all([auth(), searchParams]);
 
   const roomId = first(params.roomId);
   if (!roomId) redirect('/rooms');
 
-  const room = await prisma.room.findFirst({
-    where: { id: roomId, isActive: true },
-    include: { images: { orderBy: { position: 'asc' }, take: 1 } },
-  });
-  if (!room) notFound();
+  // Fetched together: each query is a long round trip to the database.
+  const [user, room] = await Promise.all([
+    session?.user ? prisma.user.findUnique({ where: { id: session.user.id } }) : null,
+    prisma.room.findFirst({
+      where: { id: roomId, isActive: true },
+      include: { images: { orderBy: { position: 'asc' }, take: 1 } },
+    }),
+  ]);
+  // A room that was removed or hidden since the link was made: send the guest to the rooms they can still book.
+  if (!room) redirect('/rooms?unavailable=1#rooms');
 
   const checkIn = first(params.checkIn) ?? '';
   const checkOut = first(params.checkOut) ?? '';
@@ -70,11 +74,13 @@ export default async function BookPage({ searchParams }: PageProps<'/book'>) {
             maxChildren: room.maxChildren,
             image: room.images[0]?.url ?? null,
           }}
+          // Offered to visitors who are not signed in; they come straight back to this booking afterwards.
+          signInHref={user ? null : `/login?callbackUrl=${encodeURIComponent(`/book?${new URLSearchParams(Object.entries(params).flatMap(([key, value]) => (typeof value === 'string' ? [[key, value]] : [])))}`)}`}
           initial={{
-            guestName: user.name ?? '',
-            phone: user.phone ?? '',
+            guestName: user?.name ?? '',
+            phone: user?.phone ?? '',
             // Staff accounts can have a plain username instead of an email address.
-            email: user.email?.includes('@') ? user.email : '',
+            email: user?.email.includes('@') ? user.email : '',
             checkIn: parseDateOnly(checkIn) ? checkIn : '',
             checkOut: parseDateOnly(checkOut) ? checkOut : '',
             adults: clamp(first(params.adults), 1, room.maxAdults, Math.min(2, room.maxAdults)),
