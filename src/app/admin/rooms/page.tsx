@@ -106,6 +106,9 @@ export default async function AdminRoomsPage({ searchParams }: PageProps<'/admin
                         </Link>
                         <form action={deleteRoom.bind(null, room.id)}>
                           <ConfirmSubmitButton
+                            title="Delete this room?"
+                            confirmLabel="Delete room"
+                            cancelLabel="Keep room"
                             confirmMessage={`Delete "${room.name}" and its photos? This cannot be undone.`}
                             className="font-medium text-red-500 hover:text-red-700 transition-colors"
                           >

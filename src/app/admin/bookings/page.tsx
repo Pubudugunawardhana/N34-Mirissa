@@ -1,154 +1,50 @@
-import type { BookingStatus } from '@prisma/client';
 import prisma from '@/lib/prisma';
-import Link from 'next/link';
-import { setBookingStatus, setPaymentStatus } from '@/app/actions/bookings-admin';
-import ConfirmSubmitButton from '@/components/ConfirmSubmitButton';
-import { BookingStatusBadge, PaymentStatusBadge } from '@/components/StatusBadge';
-import { MEAL_PLANS, formatLKR, formatStayDate, guestSummary, nightsBetween } from '@/lib/booking';
+import BookingList from '@/components/admin/BookingList';
+import { BOOKING_SCOPES, firstParam, listBookings } from '@/lib/admin-bookings';
+import { todayDateOnly } from '@/lib/booking';
 
 export const dynamic = 'force-dynamic';
 
-const TABS: { key: BookingStatus | 'ALL'; label: string }[] = [
-  { key: 'ALL', label: 'All' },
-  { key: 'PENDING', label: 'Pending' },
-  { key: 'CONFIRMED', label: 'Confirmed' },
-  { key: 'CANCELLED', label: 'Cancelled' },
-];
-
-const actionClass = 'font-medium transition-colors';
-
-export default async function AdminBookings({ searchParams }: PageProps<'/admin/bookings'>) {
+export default async function AdminNewBookings({ searchParams }: PageProps<'/admin/bookings'>) {
   const params = await searchParams;
-  const activeTab = TABS.find((tab) => tab.key === params.status)?.key ?? 'ALL';
+  const today = new Date(`${todayDateOnly()}T00:00:00.000Z`);
 
-  const [bookings, counts] = await Promise.all([
-    prisma.booking.findMany({
-      where: activeTab === 'ALL' ? {} : { bookingStatus: activeTab },
-      include: { room: true, user: true },
-      orderBy: { createdAt: 'desc' },
-    }),
-    prisma.booking.groupBy({ by: ['bookingStatus'], _count: { _all: true } }),
+  const [result, arrivingToday, confirmedUpcoming, waiting] = await Promise.all([
+    listBookings({ where: BOOKING_SCOPES.new, search: firstParam(params.q), page: Number(firstParam(params.page)) }),
+    prisma.booking.count({ where: { checkIn: today, bookingStatus: { not: 'CANCELLED' } } }),
+    prisma.booking.count({ where: { bookingStatus: 'CONFIRMED', checkIn: { gt: today } } }),
+    prisma.booking.count({ where: BOOKING_SCOPES.new }),
   ]);
 
-  const countFor = (key: BookingStatus | 'ALL') =>
-    key === 'ALL'
-      ? counts.reduce((sum, group) => sum + group._count._all, 0)
-      : (counts.find((group) => group.bookingStatus === key)?._count._all ?? 0);
+  const summary = [
+    { label: 'Waiting to confirm', value: waiting, hint: 'Assign a room to confirm each one' },
+    { label: 'Arriving today', value: arrivingToday, hint: 'Check-ins due today' },
+    { label: 'Confirmed, still to arrive', value: confirmedUpcoming, hint: 'Check-in after today' },
+  ];
 
   return (
     <div className='space-y-6'>
       <div>
-        <h1 className='text-2xl font-bold text-slate-800'>Bookings Management</h1>
-        <p className='text-sm text-slate-500 mt-1'>Every reservation with its booking and payment status.</p>
+        <h1 className='text-2xl font-bold text-slate-800'>New Bookings</h1>
+        <p className='text-sm text-slate-500 mt-1'>Bookings waiting for the hotel. Assign a room to confirm one, or cancel it.</p>
       </div>
 
-      <div className='flex flex-wrap gap-2'>
-        {TABS.map((tab) => (
-          <Link
-            key={tab.key}
-            href={tab.key === 'ALL' ? '/admin/bookings' : `/admin/bookings?status=${tab.key}`}
-            aria-current={tab.key === activeTab ? 'page' : undefined}
-            className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
-              tab.key === activeTab
-                ? 'bg-ocean-600 text-white shadow-sm shadow-ocean-600/20'
-                : 'bg-white text-slate-600 border border-slate-200 hover:border-ocean-600 hover:text-ocean-700'
-            }`}
-          >
-            {tab.label} <span className='opacity-70'>({countFor(tab.key)})</span>
-          </Link>
+      <div className='grid gap-4 sm:grid-cols-3'>
+        {summary.map((item) => (
+          <div key={item.label} className='bg-white p-5 rounded-2xl border border-slate-200 shadow-sm'>
+            <p className='text-sm font-medium text-slate-500'>{item.label}</p>
+            <p className='mt-1 text-3xl font-bold text-slate-800'>{item.value}</p>
+            <p className='mt-1 text-xs text-slate-400'>{item.hint}</p>
+          </div>
         ))}
       </div>
 
-      <div className='bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden'>
-        {bookings.length === 0 ? (
-          <div className='px-6 py-16 text-center text-sm text-slate-500'>No bookings here yet.</div>
-        ) : (
-          <div className='overflow-x-auto'>
-            <table className='w-full text-left'>
-              <thead className='bg-slate-50 border-b border-slate-200'>
-                <tr>
-                  <th className='p-4 text-sm font-semibold text-slate-600'>Reference</th>
-                  <th className='p-4 text-sm font-semibold text-slate-600'>Guest</th>
-                  <th className='p-4 text-sm font-semibold text-slate-600'>Room & stay</th>
-                  <th className='p-4 text-sm font-semibold text-slate-600'>Total</th>
-                  <th className='p-4 text-sm font-semibold text-slate-600'>Status</th>
-                  <th className='p-4 text-sm font-semibold text-slate-600'>Actions</th>
-                </tr>
-              </thead>
-              <tbody className='divide-y divide-slate-100'>
-                {bookings.map(b => {
-                  const nights = nightsBetween(b.checkIn, b.checkOut);
-                  const isCancelled = b.bookingStatus === 'CANCELLED';
-                  return (
-                    <tr key={b.id} className='align-top'>
-                      <td className='p-4'>
-                        <Link href={`/book/confirmation/${b.id}`} className='font-mono text-sm font-semibold text-ocean-700 hover:underline'>
-                          {b.reference}
-                        </Link>
-                        <p className='text-xs text-slate-500 mt-1'>{b.createdAt.toLocaleDateString('en-GB', { timeZone: 'Asia/Colombo' })}</p>
-                      </td>
-                      <td className='p-4'>
-                        <p className='font-medium'>{b.guestName || b.user.name}</p>
-                        <p className='text-xs text-slate-500'>{b.email || b.user.email}</p>
-                        {b.phone && <p className='text-xs text-slate-500'>{b.phone}</p>}
-                      </td>
-                      <td className='p-4 text-sm'>
-                        <p className='font-medium'>{b.room.name}</p>
-                        <p className='text-slate-600'>
-                          {formatStayDate(b.checkIn)} → {formatStayDate(b.checkOut)} ({nights} {nights === 1 ? 'night' : 'nights'})
-                        </p>
-                        <p className='text-xs text-slate-500'>
-                          {guestSummary(b.adults, b.children)} · {MEAL_PLANS[b.mealPlan].label}
-                        </p>
-                        {b.specialRequests && <p className='text-xs text-slate-500 mt-1 max-w-xs'>Note: {b.specialRequests}</p>}
-                      </td>
-                      <td className='p-4 font-medium whitespace-nowrap'>{formatLKR(b.totalAmount)}</td>
-                      <td className='p-4'>
-                        <div className='flex flex-col items-start gap-1.5'>
-                          <BookingStatusBadge status={b.bookingStatus} />
-                          <PaymentStatusBadge status={b.paymentStatus} />
-                        </div>
-                      </td>
-                      <td className='p-4 text-sm'>
-                        <div className='flex flex-col items-start gap-2'>
-                          <a href={`/admin/bookings/${b.id}/email`} target='_blank' rel='noopener' className={`${actionClass} text-slate-500 hover:text-slate-700`}>View email</a>
-                          {b.bookingStatus === 'PENDING' && (
-                            <form action={setBookingStatus.bind(null, b.id, 'CONFIRMED')}>
-                              <button className={`${actionClass} text-emerald-600 hover:text-emerald-800`}>Confirm</button>
-                            </form>
-                          )}
-                          {!isCancelled && b.paymentStatus !== 'PAID' && (
-                            <form action={setPaymentStatus.bind(null, b.id, 'PAID')}>
-                              <button className={`${actionClass} text-ocean-600 hover:text-ocean-800`}>Mark paid</button>
-                            </form>
-                          )}
-                          {b.paymentStatus === 'PAID' && (
-                            <form action={setPaymentStatus.bind(null, b.id, isCancelled ? 'REFUNDED' : 'PENDING')}>
-                              <button className={`${actionClass} text-slate-500 hover:text-slate-700`}>
-                                {isCancelled ? 'Mark refunded' : 'Mark unpaid'}
-                              </button>
-                            </form>
-                          )}
-                          {!isCancelled && (
-                            <form action={setBookingStatus.bind(null, b.id, 'CANCELLED')}>
-                              <ConfirmSubmitButton
-                                confirmMessage={`Cancel booking ${b.reference}? The room becomes available again and this cannot be undone.`}
-                                className={`${actionClass} text-red-600 hover:text-red-800`}
-                              >
-                                Cancel
-                              </ConfirmSubmitButton>
-                            </form>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <BookingList
+        result={result}
+        basePath='/admin/bookings'
+        mode='new'
+        emptyText='No new bookings. Everything has been confirmed or cancelled.'
+      />
     </div>
   );
 }

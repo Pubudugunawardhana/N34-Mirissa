@@ -59,6 +59,9 @@ function AmenitySection({ title, hint, noun, items, form, deleteAction }: Amenit
                       <p className="font-semibold text-slate-800">{item.name}</p>
                       <form action={deleteAction.bind(null, item.id)}>
                         <ConfirmSubmitButton
+                          title={`Delete this ${noun}?`}
+                          confirmLabel="Delete"
+                          cancelLabel="Keep"
                           confirmMessage={`Delete the ${noun} "${item.name}"? It will be removed from ${roomCount(item._count.rooms)}.`}
                           className="-mr-1 -mt-1 flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 transition-colors hover:bg-red-50 hover:text-red-600"
                         >
