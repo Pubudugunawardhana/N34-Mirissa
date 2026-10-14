@@ -6,6 +6,7 @@ import SiteFooter from '@/components/SiteFooter';
 import SiteNav from '@/components/SiteNav';
 import { getHotelContact } from '@/lib/hotel';
 import prisma from '@/lib/prisma';
+import SocialIcons, { hasSocialLinks } from '@/components/SocialIcons';
 
 export const metadata: Metadata = { title: 'Contact us | N34 Mirissa' };
 
@@ -32,7 +33,7 @@ export default async function ContactPage() {
 
   // A signed-in guest does not have to type their own details again.
   const user = session?.user ? await prisma.user.findUnique({ where: { id: session.user.id } }) : null;
-  const hasSocial = contact.facebookUrl || contact.instagramUrl;
+  const hasSocial = hasSocialLinks(contact.social);
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -110,23 +111,8 @@ export default async function ContactPage() {
             <p className="mt-4 text-slate-600">Want to make a reservation or have a question? Fill in the form and we will get back to you soon.</p>
 
             {hasSocial && (
-              <div className="mt-6 flex justify-center gap-3">
-                {contact.facebookUrl && (
-                  <a href={contact.facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className={socialClass}>
-                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                      <path d="M13.5 21v-7.5h2.6l.4-3h-3V8.6c0-.9.3-1.5 1.6-1.5h1.5V4.4c-.3 0-1.2-.1-2.2-.1-2.2 0-3.7 1.3-3.7 3.8v2.4H8v3h2.7V21h2.8z" />
-                    </svg>
-                  </a>
-                )}
-                {contact.instagramUrl && (
-                  <a href={contact.instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={socialClass}>
-                    <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                      <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
-                      <circle cx="12" cy="12" r="4" />
-                      <path d="M17.2 6.8h.01" />
-                    </svg>
-                  </a>
-                )}
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                <SocialIcons links={contact.social} className={socialClass} />
               </div>
             )}
           </div>

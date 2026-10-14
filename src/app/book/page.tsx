@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import BookingForm from '@/components/booking/BookingForm';
+import BookingPausedNotice from '@/components/booking/BookingPausedNotice';
 import RoomCover from '@/components/rooms/RoomCover';
 import SiteFooter from '@/components/SiteFooter';
 import SiteNav from '@/components/SiteNav';
 import { parseDateOnly } from '@/lib/booking';
+import { getSiteSettings } from '@/lib/hotel';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 
@@ -23,7 +25,7 @@ function clamp(value: string | undefined, min: number, max: number, fallback: nu
 export default async function BookPage({ searchParams }: PageProps<'/book'>) {
   // Booking does not need an account. A signed-in guest gets their saved details filled in
   // (read fresh from the database: the phone number is not part of the login session).
-  const [session, params] = await Promise.all([auth(), searchParams]);
+  const [session, params, site] = await Promise.all([auth(), searchParams, getSiteSettings()]);
 
   const roomId = first(params.roomId);
   if (!roomId) redirect('/rooms');
@@ -64,6 +66,9 @@ export default async function BookPage({ searchParams }: PageProps<'/book'>) {
 
       {/* Form and summary, overlapping the hero */}
       <main className="relative z-10 mx-auto -mt-16 max-w-6xl px-4 pb-10 sm:px-6 lg:px-8">
+        {site.bookingsPaused ? (
+          <BookingPausedNotice site={site} variant="card" />
+        ) : (
         <BookingForm
           room={{
             id: room.id,
@@ -87,6 +92,7 @@ export default async function BookPage({ searchParams }: PageProps<'/book'>) {
             children: clamp(first(params.children), 0, room.maxChildren, 0),
           }}
         />
+        )}
       </main>
 
       <SiteFooter />

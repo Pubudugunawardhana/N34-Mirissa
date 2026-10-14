@@ -10,6 +10,8 @@ import SiteNav from '@/components/SiteNav';
 import { getBookedCounts } from '@/lib/availability';
 import { formatLKR, guestSummary, todayDateOnly, validateStay } from '@/lib/booking';
 import prisma from '@/lib/prisma';
+import BookingPausedNotice from '@/components/booking/BookingPausedNotice';
+import { getSiteSettings } from '@/lib/hotel';
 
 function first(value: string | string[] | undefined) {
   return Array.isArray(value) ? value[0] : value;
@@ -42,7 +44,8 @@ export default async function RoomDetailsPage({ params, searchParams }: PageProp
   const stay = checkIn && checkOut ? validateStay(checkIn, checkOut) : null;
 
   // All fetched together: each query is a long round trip to the database.
-  const [room, otherRooms, booked] = await Promise.all([
+  const [site, room, otherRooms, booked] = await Promise.all([
+    getSiteSettings(),
     prisma.room.findFirst({
       where: { id, isActive: true },
       include: {
@@ -102,38 +105,45 @@ export default async function RoomDetailsPage({ params, searchParams }: PageProp
 
       {/* Booking bar, overlapping the hero */}
       <div id="book" className="relative z-20 mx-auto -mt-16 max-w-6xl scroll-mt-28 px-4 sm:px-6 lg:px-8">
-        <form action="/book" className="rounded-3xl border border-slate-100 bg-white p-6 shadow-2xl shadow-ocean-900/10 md:p-8">
-          <input type="hidden" name="roomId" value={room.id} />
-
-          <div className="grid grid-cols-2 items-end gap-4 lg:grid-cols-[1.2fr_1.2fr_1fr_1fr_1.2fr] lg:gap-5">
-            <div>
-              <label htmlFor="check-in" className={labelClass}>Check-in</label>
-              <input id="check-in" type="date" name="checkIn" defaultValue={checkIn} min={todayDateOnly()} className={dateInputClass} />
-            </div>
-            <div>
-              <label htmlFor="check-out" className={labelClass}>Check-out</label>
-              <input id="check-out" type="date" name="checkOut" defaultValue={checkOut} min={todayDateOnly()} className={dateInputClass} />
-            </div>
-            <SelectMenu id="adults" name="adults" label="Adults" options={countOptions(1, room.maxAdults, 'Adult', 'Adults')} defaultValue={String(adults)} />
-            <SelectMenu id="children" name="children" label="Children" options={countOptions(0, room.maxChildren, 'Child', 'Children')} defaultValue={String(children)} />
-            <button className="col-span-2 h-14 rounded-xl bg-sand-500 px-4 font-semibold text-white shadow-lg shadow-sand-500/25 transition-colors hover:bg-sand-600 lg:col-span-1">
-              Book this room
-            </button>
+        {/* While the hotel has paused online booking, the date picker gives way to how to book instead. */}
+        {site.bookingsPaused ? (
+          <div className="rounded-3xl bg-white p-2 shadow-2xl shadow-ocean-900/10">
+            <BookingPausedNotice site={site} />
           </div>
-
-          {(stay || roomsLeft !== null) && (
-            <div className="mt-5 border-t border-slate-100 pt-4 text-sm font-medium" aria-live="polite">
-              {stay && !stay.ok && <p className="text-red-600">{stay.message}</p>}
-              {roomsLeft !== null && (
-                <p className={roomsLeft > 0 ? 'text-emerald-700' : 'text-red-600'}>
-                  {roomsLeft > 0
-                    ? `${roomsLeft} ${roomsLeft === 1 ? 'room' : 'rooms'} left for these dates`
-                    : 'Sold out for these dates. Try different dates.'}
-                </p>
-              )}
+        ) : (
+          <form action="/book" className="rounded-3xl border border-slate-100 bg-white p-6 shadow-2xl shadow-ocean-900/10 md:p-8">
+            <input type="hidden" name="roomId" value={room.id} />
+  
+            <div className="grid grid-cols-2 items-end gap-4 lg:grid-cols-[1.2fr_1.2fr_1fr_1fr_1.2fr] lg:gap-5">
+              <div>
+                <label htmlFor="check-in" className={labelClass}>Check-in</label>
+                <input id="check-in" type="date" name="checkIn" defaultValue={checkIn} min={todayDateOnly()} className={dateInputClass} />
+              </div>
+              <div>
+                <label htmlFor="check-out" className={labelClass}>Check-out</label>
+                <input id="check-out" type="date" name="checkOut" defaultValue={checkOut} min={todayDateOnly()} className={dateInputClass} />
+              </div>
+              <SelectMenu id="adults" name="adults" label="Adults" options={countOptions(1, room.maxAdults, 'Adult', 'Adults')} defaultValue={String(adults)} />
+              <SelectMenu id="children" name="children" label="Children" options={countOptions(0, room.maxChildren, 'Child', 'Children')} defaultValue={String(children)} />
+              <button className="col-span-2 h-14 rounded-xl bg-sand-500 px-4 font-semibold text-white shadow-lg shadow-sand-500/25 transition-colors hover:bg-sand-600 lg:col-span-1">
+                Book this room
+              </button>
             </div>
-          )}
-        </form>
+  
+            {(stay || roomsLeft !== null) && (
+              <div className="mt-5 border-t border-slate-100 pt-4 text-sm font-medium" aria-live="polite">
+                {stay && !stay.ok && <p className="text-red-600">{stay.message}</p>}
+                {roomsLeft !== null && (
+                  <p className={roomsLeft > 0 ? 'text-emerald-700' : 'text-red-600'}>
+                    {roomsLeft > 0
+                      ? `${roomsLeft} ${roomsLeft === 1 ? 'room' : 'rooms'} left for these dates`
+                      : 'Sold out for these dates. Try different dates.'}
+                  </p>
+                )}
+              </div>
+            )}
+          </form>
+        )}
       </div>
 
       <main>
