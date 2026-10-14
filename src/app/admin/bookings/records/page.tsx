@@ -46,9 +46,14 @@ export default async function AdminBookingRecords({ searchParams }: PageProps<'/
 
   return (
     <div className='space-y-6'>
-      <div>
-        <h1 className='text-2xl font-bold text-slate-800'>Booking Records</h1>
-        <p className='text-sm text-slate-500 mt-1'>Confirmed and cancelled bookings. Upcoming and past stays are sorted by date automatically.</p>
+      <div className='flex flex-wrap items-end justify-between gap-3'>
+        <div>
+          <h1 className='text-2xl font-bold text-slate-800'>Booking Records</h1>
+          <p className='text-sm text-slate-500 mt-1'>Confirmed and cancelled bookings. Upcoming and past stays are sorted by date automatically.</p>
+        </div>
+        <Link href='/admin/bookings/walk-in' className='inline-flex h-10 items-center gap-1.5 rounded-lg bg-ocean-600 px-4 text-sm font-semibold text-white shadow-sm shadow-ocean-600/20 transition-colors hover:bg-ocean-700'>
+          <span aria-hidden='true' className='text-lg leading-none'>+</span> Walk-in booking
+        </Link>
       </div>
 
       <div className='flex flex-wrap gap-2'>

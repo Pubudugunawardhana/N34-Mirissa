@@ -8,21 +8,44 @@ import prisma from '@/lib/prisma';
 
 export const dynamic = 'force-dynamic';
 
-export default async function BookingReceiptPage({ params }: PageProps<'/admin/bookings/[id]/receipt'>) {
-  const { id } = await params;
+export default async function BookingReceiptPage({ params, searchParams }: PageProps<'/admin/bookings/[id]/receipt'>) {
+  const [{ id }, query] = await Promise.all([params, searchParams]);
+  // Set by the walk-in screen right after it created the booking.
+  const justCreated = query.new === '1';
 
   const [booking, hotel] = await Promise.all([
-    prisma.booking.findUnique({ where: { id }, include: { room: true } }),
+    prisma.booking.findUnique({ where: { id }, include: { room: true, charges: { orderBy: { createdAt: 'asc' } } } }),
     getHotelContact(),
   ]);
   if (!booking) notFound();
 
   return (
     <div className="mx-auto max-w-2xl space-y-4">
+      {justCreated && booking.source === 'WALK_IN' && (
+        <div role="status" className="flex items-start gap-3 rounded-2xl bg-emerald-50 px-5 py-4 text-sm text-emerald-700 ring-1 ring-inset ring-emerald-200 print:hidden">
+          <svg className="mt-0.5 h-5 w-5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+          <p>
+            <span className="font-semibold">Walk-in booking created.</span> Room {booking.roomNumber} is held for {booking.guestName}. Print the receipt or save it as a PDF for the guest.
+          </p>
+        </div>
+      )}
       {/* Not printed. */}
       <div className="flex items-center justify-between print:hidden">
         <Link href="/admin/bookings/records" className="text-sm text-slate-500 hover:text-ocean-600">← Back to booking records</Link>
-        <PrintButton className="inline-flex h-10 items-center rounded-lg bg-ocean-600 px-4 text-sm font-semibold text-white shadow-sm shadow-ocean-600/20 transition-colors hover:bg-ocean-700" />
+        <div className="flex items-center gap-2">
+          {/* The email the guest received: the payment receipt once paid, otherwise the booking email. */}
+          <a
+            href={`/admin/bookings/${booking.id}/email${booking.paymentStatus === 'PAID' ? '?type=payment' : ''}`}
+            target="_blank"
+            rel="noopener"
+            className="inline-flex h-10 items-center rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition-colors hover:border-ocean-600 hover:text-ocean-700"
+          >
+            View email
+          </a>
+          <PrintButton className="inline-flex h-10 items-center rounded-lg bg-ocean-600 px-4 text-sm font-semibold text-white shadow-sm shadow-ocean-600/20 transition-colors hover:bg-ocean-700" />
+        </div>
       </div>
 
       {/* theme-fixed: a receipt is always printed dark on white, whatever theme the admin uses. */}
@@ -39,7 +62,8 @@ export default async function BookingReceiptPage({ params }: PageProps<'/admin/b
             <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">Booking receipt</p>
             <p className="mt-1 font-mono text-xl font-semibold tracking-widest text-ocean-800">{booking.reference}</p>
             <p className="mt-1 text-sm text-slate-500">
-              Booked {booking.createdAt.toLocaleDateString('en-GB', { timeZone: 'Asia/Colombo', day: 'numeric', month: 'long', year: 'numeric' })}
+              {booking.source === 'WALK_IN' ? 'Booked at the hotel (walk-in)' : 'Booked'}{' '}
+              {booking.createdAt.toLocaleDateString('en-GB', { timeZone: 'Asia/Colombo', day: 'numeric', month: 'long', year: 'numeric' })}
             </p>
           </div>
         </header>
@@ -50,6 +74,7 @@ export default async function BookingReceiptPage({ params }: PageProps<'/admin/b
             <p className="mt-1 font-semibold text-slate-800">{booking.guestName || 'Guest'}</p>
             {booking.phone && <p className="text-sm text-slate-600">{booking.phone}</p>}
             {booking.email && <p className="break-all text-sm text-slate-600">{booking.email}</p>}
+            {booking.idNumber && <p className="text-sm text-slate-600">ID {booking.idNumber}</p>}
           </div>
           <div className="sm:text-right">
             <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Status</p>
