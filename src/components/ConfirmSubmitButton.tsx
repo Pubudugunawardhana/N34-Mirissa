@@ -11,10 +11,25 @@ type ConfirmSubmitButtonProps = {
   confirmLabel?: string;
   cancelLabel?: string;
   className?: string;
+  // "danger" (red, warning sign) for things that cannot be undone; "primary" (ocean, tick) for ordinary changes.
+  tone?: 'danger' | 'primary';
   children: React.ReactNode;
 };
 
-// Button for destructive forms. It opens a confirmation dialog; only the dialog's red button submits the form.
+const TONES = {
+  danger: {
+    icon: 'bg-red-50 text-red-600',
+    path: 'M12 9v4M12 17h.01M10.3 3.9L2.4 17.5A2 2 0 0 0 4.1 20.5h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
+    button: 'bg-red-600 shadow-red-600/20 hover:bg-red-700 focus-visible:ring-red-600',
+  },
+  primary: {
+    icon: 'bg-ocean-50 text-ocean-700',
+    path: 'M20 6 9 17l-5-5',
+    button: 'bg-ocean-600 shadow-ocean-600/20 hover:bg-ocean-700 focus-visible:ring-ocean-500',
+  },
+};
+
+// Button for forms that need a second look. It opens a confirmation dialog; only the dialog's confirm button submits the form.
 // Must be rendered inside the <form> it belongs to.
 export default function ConfirmSubmitButton({
   confirmMessage,
@@ -22,8 +37,10 @@ export default function ConfirmSubmitButton({
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   className,
+  tone = 'danger',
   children,
 }: ConfirmSubmitButtonProps) {
+  const style = TONES[tone];
   const dialogRef = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const messageId = useId();
@@ -58,9 +75,9 @@ export default function ConfirmSubmitButton({
         className="m-auto w-[calc(100%-2rem)] max-w-md rounded-3xl bg-transparent p-0 text-left font-sans text-base font-normal normal-case tracking-normal backdrop:bg-ocean-900/60 backdrop:backdrop-blur-sm"
       >
         <div className="rounded-3xl bg-white p-6 shadow-2xl shadow-ocean-900/30 ring-1 ring-slate-200 sm:p-8">
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+          <span className={`flex h-12 w-12 items-center justify-center rounded-full ${style.icon}`}>
             <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-              <path d="M12 9v4M12 17h.01M10.3 3.9L2.4 17.5A2 2 0 0 0 4.1 20.5h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
+              <path d={style.path} />
             </svg>
           </span>
 
@@ -81,7 +98,7 @@ export default function ConfirmSubmitButton({
             <button
               type="submit"
               disabled={pending}
-              className="h-11 rounded-xl bg-red-600 px-5 text-sm font-semibold text-white shadow-md shadow-red-600/20 transition-colors hover:bg-red-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 disabled:opacity-70"
+              className={`h-11 rounded-xl px-5 text-sm font-semibold text-white shadow-md transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-70 ${style.button}`}
             >
               {pending ? 'Working…' : confirmLabel}
             </button>
