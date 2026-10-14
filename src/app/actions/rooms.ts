@@ -5,6 +5,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { requireAdmin } from '@/lib/session';
+import { todayDateOnly, parseDateOnly } from '@/lib/booking';
+import { MAX_ROOM_NUMBER_LENGTH, MAX_ROOM_NUMBERS, parseRoomNumbers } from '@/lib/room-occupancy';
 import { removeRoomImageFile, uploadRoomImage, validateImageFile } from '@/lib/uploads';
 import { RoomSchema, type FieldErrors } from '@/lib/validation';
 
@@ -21,6 +23,45 @@ function revalidateRooms() {
   revalidatePath('/rooms');
 }
 
+// Checks the room numbers typed for a room type. Returns the problem to show, or nothing when they are fine.
+async function checkRoomNumbers(roomNumbers: string[], roomId: string) {
+  if (roomNumbers.length > MAX_ROOM_NUMBERS) return `A room type can have at most ${MAX_ROOM_NUMBERS} room numbers.`;
+  const tooLong = roomNumbers.find((value) => value.length > MAX_ROOM_NUMBER_LENGTH);
+  if (tooLong) return `"${tooLong.slice(0, 30)}…" is too long for a room number.`;
+
+  const seen = new Set<string>();
+  for (const value of roomNumbers) {
+    const key = value.toLowerCase();
+    if (seen.has(key)) return `Room ${value} is listed twice.`;
+    seen.add(key);
+  }
+
+  // A room number belongs to one room type only, so the hotel never has two "101"s.
+  const otherRooms = await prisma.room.findMany({
+    where: roomId ? { id: { not: roomId } } : {},
+    select: { name: true, roomNumbers: true },
+  });
+  for (const other of otherRooms) {
+    const clash = other.roomNumbers.find((value) => seen.has(value.toLowerCase()));
+    if (clash) return `Room ${clash} already belongs to ${other.name}.`;
+  }
+
+  // A number can only be taken away once no current or upcoming booking holds it.
+  if (roomId) {
+    const today = parseDateOnly(todayDateOnly())!;
+    const held = await prisma.booking.findFirst({
+      where: {
+        roomId,
+        roomNumber: { not: null, notIn: roomNumbers },
+        bookingStatus: { not: 'CANCELLED' },
+        checkOut: { gt: today },
+      },
+      select: { roomNumber: true, reference: true },
+    });
+    if (held) return `Room ${held.roomNumber} is assigned to booking ${held.reference}. Give that booking another room before removing the number.`;
+  }
+}
+
 function strings(formData: FormData, name: string) {
   return formData.getAll(name).filter((value): value is string => typeof value === 'string' && value !== '');
 }
@@ -29,7 +70,7 @@ function strings(formData: FormData, name: string) {
 export async function saveRoom(prevState: RoomFormState, formData: FormData): Promise<RoomFormState> {
   await requireAdmin();
 
-  const fieldNames = ['name', 'description', 'price', 'area', 'quantity', 'maxAdults', 'maxChildren'];
+  const fieldNames = ['name', 'description', 'price', 'area', 'quantity', 'roomNumbers', 'maxAdults', 'maxChildren'];
   const values = Object.fromEntries(fieldNames.map((field) => [field, String(formData.get(field) ?? '')]));
 
   const validatedFields = RoomSchema.safeParse(values);
@@ -42,6 +83,11 @@ export async function saveRoom(prevState: RoomFormState, formData: FormData): Pr
   }
 
   const id = String(formData.get('id') ?? '');
+
+  const roomNumbers = parseRoomNumbers(values.roomNumbers);
+  const roomNumberProblem = await checkRoomNumbers(roomNumbers, id);
+  if (roomNumberProblem) return { errors: { roomNumbers: [roomNumberProblem] }, message: roomNumberProblem, values };
+
   const files = formData.getAll('images').filter((value): value is File => value instanceof File && value.size > 0);
   const removeImageIds = strings(formData, 'removeImageIds');
 
@@ -59,9 +105,12 @@ export async function saveRoom(prevState: RoomFormState, formData: FormData): Pr
     return { errors: { images: [problem] }, message: problem, values };
   }
 
-  const { maxAdults, maxChildren, ...rest } = validatedFields.data;
+  const { maxAdults, maxChildren, quantity, ...rest } = validatedFields.data;
   const data = {
     ...rest,
+    roomNumbers,
+    // With room numbers, the number of rooms is simply how many there are.
+    quantity: roomNumbers.length > 0 ? roomNumbers.length : quantity,
     maxAdults,
     maxChildren,
     capacity: maxAdults + maxChildren,

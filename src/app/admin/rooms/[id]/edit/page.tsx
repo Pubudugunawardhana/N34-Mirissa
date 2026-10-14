@@ -33,6 +33,7 @@ export default async function EditRoomPage({ params }: PageProps<'/admin/rooms/[
           price: room.price,
           area: room.area,
           quantity: room.quantity,
+          roomNumbers: room.roomNumbers,
           maxAdults: room.maxAdults,
           maxChildren: room.maxChildren,
           isActive: room.isActive,

@@ -83,7 +83,12 @@ export default async function AdminRoomsPage({ searchParams }: PageProps<'/admin
                     <td className="py-4 px-6 font-medium text-ocean-700 whitespace-nowrap">{formatLKR(room.price)}</td>
                     <td className="py-4 px-6 text-sm text-slate-600 whitespace-nowrap">{guestSummary(room.maxAdults, room.maxChildren)}</td>
                     <td className="py-4 px-6 text-sm text-slate-600 whitespace-nowrap">{room.area} sq ft</td>
-                    <td className="py-4 px-6 text-sm text-slate-600">{room.quantity}</td>
+                    <td className="py-4 px-6 text-sm text-slate-600">
+                      {room.quantity}
+                      {room.roomNumbers.length > 0 && (
+                        <p className="mt-0.5 max-w-40 text-xs leading-snug text-slate-400">{room.roomNumbers.join(', ')}</p>
+                      )}
+                    </td>
                     <td className="py-4 px-6">
                       <form action={toggleRoomActive.bind(null, room.id, !room.isActive)}>
                         <button
