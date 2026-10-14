@@ -43,6 +43,7 @@ export default async function AdminLayout({
               {[
                 { href: '/admin/bookings', label: 'New bookings', count: newBookings },
                 { href: '/admin/bookings/records', label: 'Booking records', count: 0 },
+                { href: '/admin/availability', label: 'Room availability', count: 0 },
               ].map((item) => (
                 <Link
                   key={item.href}

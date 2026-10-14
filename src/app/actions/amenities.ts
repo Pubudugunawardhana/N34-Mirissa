@@ -23,26 +23,45 @@ function revalidateAmenities() {
   revalidatePath('/rooms');
 }
 
-function nameError(name: string) {
-  if (name.length < 2) return 'Name must be at least 2 characters long';
-  if (name.length > MAX_NAME_LENGTH) return `Name must be ${MAX_NAME_LENGTH} characters or fewer`;
-  return null;
+// Features and facilities take the same three fields and follow the same rules.
+function readAmenity(formData: FormData) {
+  const name = String(formData.get('name') ?? '').trim();
+  const description = String(formData.get('description') ?? '').trim();
+  const sentIcon = String(formData.get('icon') ?? '');
+  // No icon sent: pick one from the name, the same way the form does while the admin types.
+  const icon = sentIcon || suggestFacilityIcon(name) || FALLBACK_FACILITY_ICON;
+
+  const errors: FieldErrors = {};
+  if (name.length < 2) errors.name = ['Name must be at least 2 characters long'];
+  else if (name.length > MAX_NAME_LENGTH) errors.name = [`Name must be ${MAX_NAME_LENGTH} characters or fewer`];
+  if (!isFacilityIcon(icon)) errors.icon = ['Please choose an icon'];
+  if (description.length < 5) errors.description = ['Please write a short description'];
+  else if (description.length > MAX_DESCRIPTION_LENGTH) {
+    errors.description = [`Description must be ${MAX_DESCRIPTION_LENGTH} characters or fewer`];
+  }
+
+  return {
+    data: { name, description, icon },
+    values: { name, description, icon: sentIcon },
+    errors: Object.keys(errors).length > 0 ? errors : null,
+  };
+}
+
+function duplicateName(name: string, values: AmenityFormState['values']): AmenityFormState {
+  return { errors: { name: [`"${name}" is already in the list`] }, values };
 }
 
 export async function addFeature(prevState: AmenityFormState, formData: FormData): Promise<AmenityFormState> {
   await requireAdmin();
 
-  const name = String(formData.get('name') ?? '').trim();
-  const values = { name, description: '', icon: '' };
+  const { data, values, errors } = readAmenity(formData);
+  if (errors) return { errors, message: 'Please fix the highlighted fields.', values };
 
-  const problem = nameError(name);
-  if (problem) return { errors: { name: [problem] }, values };
-
-  if (await prisma.feature.findFirst({ where: { name: { equals: name, mode: 'insensitive' } } })) {
-    return { errors: { name: [`"${name}" is already in the list`] }, values };
+  if (await prisma.feature.findFirst({ where: { name: { equals: data.name, mode: 'insensitive' } } })) {
+    return duplicateName(data.name, values);
   }
 
-  await prisma.feature.create({ data: { name } });
+  await prisma.feature.create({ data });
   revalidateAmenities();
   return { savedAt: Date.now() };
 }
@@ -57,27 +76,14 @@ export async function deleteFeature(id: string) {
 export async function addFacility(prevState: AmenityFormState, formData: FormData): Promise<AmenityFormState> {
   await requireAdmin();
 
-  const name = String(formData.get('name') ?? '').trim();
-  const description = String(formData.get('description') ?? '').trim();
-  // No icon sent: pick one from the name, the same way the form does while the admin types.
-  const icon = String(formData.get('icon') ?? '') || suggestFacilityIcon(name) || FALLBACK_FACILITY_ICON;
-  const values = { name, description, icon: String(formData.get('icon') ?? '') };
+  const { data, values, errors } = readAmenity(formData);
+  if (errors) return { errors, message: 'Please fix the highlighted fields.', values };
 
-  const errors: FieldErrors = {};
-  const problem = nameError(name);
-  if (problem) errors.name = [problem];
-  if (!isFacilityIcon(icon)) errors.icon = ['Please choose an icon'];
-  if (description.length < 5) errors.description = ['Please write a short description'];
-  if (description.length > MAX_DESCRIPTION_LENGTH) {
-    errors.description = [`Description must be ${MAX_DESCRIPTION_LENGTH} characters or fewer`];
-  }
-  if (Object.keys(errors).length > 0) return { errors, message: 'Please fix the highlighted fields.', values };
-
-  if (await prisma.facility.findFirst({ where: { name: { equals: name, mode: 'insensitive' } } })) {
-    return { errors: { name: [`"${name}" is already in the list`] }, values };
+  if (await prisma.facility.findFirst({ where: { name: { equals: data.name, mode: 'insensitive' } } })) {
+    return duplicateName(data.name, values);
   }
 
-  await prisma.facility.create({ data: { name, description, icon } });
+  await prisma.facility.create({ data });
   revalidateAmenities();
   return { savedAt: Date.now() };
 }
