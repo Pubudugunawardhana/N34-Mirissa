@@ -1,8 +1,11 @@
 import Link from "next/link";
 import PhotoSlideshow from "@/components/PhotoSlideshow";
 import SelectMenu from "@/components/SelectMenu";
+import SiteFooter from "@/components/SiteFooter";
 import SiteNav from "@/components/SiteNav";
-import { todayDateOnly } from "@/lib/booking";
+import RoomCover from "@/components/rooms/RoomCover";
+import { formatLKR, guestSummary, todayDateOnly } from "@/lib/booking";
+import prisma from "@/lib/prisma";
 
 const HERO_SLIDES = [
   "/images/hero-1.jpg",
@@ -28,13 +31,20 @@ const CHILD_OPTIONS = [
   { value: "4", label: "4+ Children" },
 ];
 
-export default function Home() {
+export default async function Home() {
+  const featuredRooms = await prisma.room.findMany({
+    where: { isActive: true },
+    include: { images: { orderBy: { position: "asc" }, take: 1 } },
+    orderBy: { price: "asc" },
+    take: 3,
+  });
+
   return (
     <div className="min-h-screen bg-slate-50" suppressHydrationWarning>
       <SiteNav />
 
       {/* Hero Section */}
-      <section className="relative h-screen min-h-[640px] flex items-center justify-center overflow-hidden bg-ocean-900">
+      <section className="theme-fixed relative h-screen min-h-[640px] flex items-center justify-center overflow-hidden bg-ocean-900">
         {/* Free stock beach photos. Replace the files in public/images with real photos of the hotel. */}
         <PhotoSlideshow slides={HERO_SLIDES} sizes="100vw" dotsClassName="bottom-32 left-1/2 -translate-x-1/2" />
         {/* Darkens the photos so the white text stays readable */}
@@ -46,7 +56,7 @@ export default function Home() {
           </span>
           <h1 className="font-display text-5xl md:text-7xl font-semibold text-white mb-6 leading-[1.1] drop-shadow-lg">
             Experience the Magic of <br />
-            <span className="italic text-transparent bg-clip-text bg-gradient-to-r from-ocean-400 to-sand-200">Mirissa</span>
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-ocean-400 to-sand-200">Mirissa</span>
           </h1>
           <p className="text-lg text-slate-200 mb-10 max-w-2xl mx-auto font-light">
             Discover a serene getaway at N34 Mirissa. Where the ocean breeze meets luxury comfort, creating memories that last a lifetime.
@@ -84,6 +94,52 @@ export default function Home() {
         </form>
       </div>
       
+      {/* Rooms */}
+      {featuredRooms.length > 0 && (
+        <section className="pt-24 bg-slate-50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex flex-wrap items-end justify-between gap-4 mb-10">
+              <div>
+                <span className="text-sand-600 font-medium tracking-[0.3em] uppercase text-xs mb-3 block">Stay with us</span>
+                <h2 className="font-display text-3xl md:text-4xl font-semibold text-ocean-900">Our Rooms</h2>
+              </div>
+              <Link href="/rooms" className="text-sm font-semibold text-ocean-600 hover:text-ocean-800 hover:underline">
+                View all rooms →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              {featuredRooms.map((room) => (
+                <Link
+                  key={room.id}
+                  href={`/rooms/${room.id}`}
+                  className="group flex flex-col overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-sm transition-shadow hover:shadow-xl hover:shadow-ocean-900/10"
+                >
+                  <div className="relative aspect-[4/3] overflow-hidden bg-slate-200">
+                    <div className="absolute inset-0 transition-transform duration-700 group-hover:scale-105">
+                      <RoomCover src={room.images[0]?.url} alt={room.name} sizes="(min-width: 768px) 33vw, 100vw" />
+                    </div>
+                  </div>
+                  <div className="flex flex-1 flex-col p-6">
+                    <h3 className="font-display text-xl font-semibold text-ocean-900 group-hover:text-ocean-600 transition-colors">{room.name}</h3>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {guestSummary(room.maxAdults, room.maxChildren)} · {room.area} sq ft
+                    </p>
+                    <div className="mt-5 flex items-end justify-between border-t border-slate-100 pt-4">
+                      <p>
+                        <span className="font-display text-xl font-semibold text-ocean-900">{formatLKR(room.price)}</span>
+                        <span className="text-xs text-slate-500"> / night</span>
+                      </p>
+                      <span className="text-sm font-semibold text-sand-600">View room →</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Features Section */}
       <section className="py-24 bg-slate-50">
         <div className="max-w-7xl mx-auto px-4 text-center">
@@ -113,6 +169,8 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      <SiteFooter />
     </div>
   );
 }
