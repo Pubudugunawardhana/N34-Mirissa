@@ -6,8 +6,8 @@ import { revalidatePath } from 'next/cache';
 export async function updateSettings(formData: FormData) {
   const siteTitle = formData.get('siteTitle') as string;
   const aboutUs = formData.get('aboutUs') as string;
-  const contactPhone = formData.get('contactPhone') as string;
-  const contactEmail = formData.get('contactEmail') as string;
+  const phone = formData.get('phone') as string;
+  const email = formData.get('email') as string;
 
   try {
     // Assuming there's only one setting row, ID = 1
@@ -16,20 +16,22 @@ export async function updateSettings(formData: FormData) {
       update: {
         siteTitle,
         aboutUs,
-        contactPhone,
-        contactEmail,
+        phone,
+        email,
       },
       create: {
         id: 'default',
         siteTitle,
         aboutUs,
-        contactPhone,
-        contactEmail,
+        phone,
+        email,
       },
     });
   } catch (error) {
-    return { message: 'Database Error: Failed to Update Settings.' };
+    throw new Error('Failed to update settings');
   }
 
   revalidatePath('/admin/settings');
 }
+
+
