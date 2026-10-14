@@ -39,10 +39,10 @@ export async function submitContactMessage(prevState: ContactFormState, formData
   }
 
   // Consent is only checked, never stored: without it nothing is saved at all.
-  const { consent: _consent, phone, ...data } = validatedFields.data;
+  const { name, email, phone, subject, message } = validatedFields.data;
 
   try {
-    await prisma.contactMessage.create({ data: { ...data, phone: phone || null } });
+    await prisma.contactMessage.create({ data: { name, email, phone: phone || null, subject, message } });
     return { success: true, message: 'Your message has been sent. We will get back to you soon.' };
   } catch (error) {
     console.error('Failed to save contact message', error);
