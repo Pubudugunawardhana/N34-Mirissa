@@ -1,103 +1,121 @@
 'use client';
 
-import { useActionState, useEffect } from 'react';
-import { registerUser } from '@/app/actions/register';
+import { useActionState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { registerUser, type RegisterState } from '@/app/actions/register';
+import Alert from '@/components/auth/Alert';
+import AuthShell from '@/components/auth/AuthShell';
+import Field from '@/components/auth/Field';
+import PasswordInput from '@/components/auth/PasswordInput';
+import ResendVerification from '@/components/auth/ResendVerification';
+import SubmitButton from '@/components/auth/SubmitButton';
+
+const initialState: RegisterState = {};
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const [state, formAction, isPending] = useActionState(registerUser, { message: '', errors: {} });
+  const [state, formAction, isPending] = useActionState(registerUser, initialState);
 
-  useEffect(() => {
-    if (state?.success) {
-      // Redirect to login after a short delay
-      setTimeout(() => {
-        router.push('/login');
-      }, 2000);
-    }
-  }, [state?.success, router]);
+  if (state.success && state.email) {
+    return (
+      <AuthShell title="Check your inbox" subtitle="One more step to finish setting up your account">
+        <div className="space-y-5">
+          <Alert variant="success">
+            {state.message} We sent a verification link to <strong>{state.email}</strong>. It expires in 24 hours.
+          </Alert>
+          <p className="text-sm text-slate-600">
+            {state.verificationRequired
+              ? 'Open the link in that email to activate your account, then sign in.'
+              : 'You can sign in right away. Opening the link confirms your email address.'}
+          </p>
+          {state.linkInConsole && (
+            <Alert variant="info">
+              Email sending is not set up on this computer yet, so no message was delivered. The verification link is printed in the server terminal.
+            </Alert>
+          )}
+          <Link
+            href="/login"
+            className="block w-full rounded-lg bg-ocean-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-md shadow-ocean-600/20 transition-colors hover:bg-ocean-700"
+          >
+            Go to sign in
+          </Link>
+          <div className="text-center">
+            <p className="text-sm text-slate-500 mb-1">Didn&apos;t get the email?</p>
+            <ResendVerification email={state.email} />
+          </div>
+        </div>
+      </AuthShell>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl border border-slate-100">
-        <div>
-          <h2 className="mt-2 text-center text-3xl font-extrabold text-ocean-900 tracking-tight">
-            Create an Account
-          </h2>
-          <p className="mt-2 text-center text-sm text-slate-500">
-            Join N34 Mirissa for exclusive experiences
+    <AuthShell
+      title="Create an account"
+      subtitle="Join N34 Mirissa for exclusive experiences"
+      footer={
+        <>
+          <p>
+            Already have an account?{' '}
+            <Link href="/login" className="font-semibold text-ocean-600 hover:underline">
+              Sign in
+            </Link>
           </p>
-        </div>
-        
-        {state?.success ? (
-          <div className="bg-green-50 text-green-800 p-4 rounded-lg text-center font-medium border border-green-200">
-            {state.message} <br/> Redirecting to login...
-          </div>
-        ) : (
-          <form className="mt-8 space-y-6" action={formAction}>
-            <div className="rounded-md shadow-sm space-y-4">
-              <div>
-                <label htmlFor="name" className="sr-only">Full Name</label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-ocean-500 focus:border-ocean-500 sm:text-sm"
-                  placeholder="Full Name"
-                />
-                {state?.errors?.name && <p className="text-red-500 text-xs mt-1">{state.errors.name[0]}</p>}
-              </div>
-              <div>
-                <label htmlFor="email-address" className="sr-only">Email address</label>
-                <input
-                  id="email-address"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-ocean-500 focus:border-ocean-500 sm:text-sm"
-                  placeholder="Email address"
-                />
-                {state?.errors?.email && <p className="text-red-500 text-xs mt-1">{state.errors.email[0]}</p>}
-              </div>
-              <div>
-                <label htmlFor="password" className="sr-only">Password</label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  className="appearance-none rounded-lg relative block w-full px-4 py-3 border border-slate-300 placeholder-slate-400 text-slate-900 focus:outline-none focus:ring-ocean-500 focus:border-ocean-500 sm:text-sm"
-                  placeholder="Password (min 6 characters)"
-                />
-                {state?.errors?.password && <p className="text-red-500 text-xs mt-1">{state.errors.password[0]}</p>}
-              </div>
-            </div>
+          <p className="mt-3">
+            <Link href="/" className="text-slate-500 hover:text-ocean-600 hover:underline">
+              Continue as guest
+            </Link>
+          </p>
+        </>
+      }
+    >
+      <form className="space-y-5" action={formAction} noValidate>
+        {state.message && <Alert>{state.message}</Alert>}
 
-            <div>
-              <button
-                type="submit"
-                disabled={isPending}
-                className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-lg text-white bg-ocean-600 hover:bg-ocean-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-ocean-500 transition-colors disabled:bg-ocean-400"
-              >
-                {isPending ? 'Registering...' : 'Sign up'}
-              </button>
-            </div>
-            
-            <div className="text-center text-sm text-slate-600 mt-4">
-              Already have an account? <Link href="/login" className="text-ocean-600 hover:underline">Sign in</Link>
-            </div>
-            
-            <div className="flex items-end justify-center" aria-live="polite">
-              {state?.message && !state?.success && (
-                <p className="text-sm text-red-500 text-center">{state.message}</p>
-              )}
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
+        <Field
+          id="name"
+          name="name"
+          type="text"
+          label="Full name"
+          autoComplete="name"
+          placeholder="Your full name"
+          defaultValue={state.values?.name}
+          error={state.errors?.name?.[0]}
+          required
+        />
+        <Field
+          id="email"
+          name="email"
+          type="email"
+          label="Email address"
+          autoComplete="email"
+          placeholder="you@example.com"
+          defaultValue={state.values?.email}
+          error={state.errors?.email?.[0]}
+          required
+        />
+        <PasswordInput
+          id="password"
+          name="password"
+          label="Password"
+          autoComplete="new-password"
+          placeholder="At least 8 characters, with a letter and a number"
+          error={state.errors?.password?.[0]}
+          showStrength
+          required
+        />
+        <PasswordInput
+          id="confirmPassword"
+          name="confirmPassword"
+          label="Confirm password"
+          autoComplete="new-password"
+          placeholder="Repeat your password"
+          error={state.errors?.confirmPassword?.[0]}
+          required
+        />
+
+        <SubmitButton pending={isPending} pendingLabel="Creating account...">
+          Create account
+        </SubmitButton>
+      </form>
+    </AuthShell>
   );
 }
