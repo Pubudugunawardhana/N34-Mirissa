@@ -1,6 +1,6 @@
 'use server';
 
-import { randomBytes, randomInt } from 'crypto';
+import { randomBytes } from 'crypto';
 import { Prisma } from '@prisma/client';
 import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
@@ -10,6 +10,8 @@ import { auth } from '@/auth';
 import { getRoomsLeft } from '@/lib/availability';
 import { quoteBooking, todayDateOnly, validateStay } from '@/lib/booking';
 import { bookingAccess } from '@/lib/booking-access';
+import { SoldOutError, isRetryableBookingError, newReference } from '@/lib/booking-create';
+import { getSiteSettings } from '@/lib/hotel';
 import { sendBookingConfirmationEmail } from '@/lib/mail';
 import { BookingSchema, type FieldErrors } from '@/lib/validation';
 
@@ -20,21 +22,13 @@ export type BookingFormState = {
 
 export type AvailabilityResult = { ok: true; roomsLeft: number } | { ok: false; message: string };
 
-// No 0/O or 1/I, so a reference read over the phone cannot be mistyped.
-const REFERENCE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-
-function newReference() {
-  let code = '';
-  for (let i = 0; i < 6; i++) code += REFERENCE_ALPHABET[randomInt(REFERENCE_ALPHABET.length)];
-  return `N34-${code}`;
-}
-
-class SoldOutError extends Error {}
-
 // Called by the booking form as the dates change.
 export async function checkAvailability(roomId: string, checkIn: string, checkOut: string): Promise<AvailabilityResult> {
   const stay = validateStay(checkIn, checkOut);
   if (!stay.ok) return stay;
+
+  const site = await getSiteSettings();
+  if (site.bookingsPaused) return { ok: false, message: site.bookingsPausedMessage };
 
   const room = await prisma.room.findFirst({ where: { id: roomId, isActive: true } });
   if (!room) return { ok: false, message: 'This room is no longer available.' };
@@ -43,6 +37,10 @@ export async function checkAvailability(roomId: string, checkIn: string, checkOu
 }
 
 export async function createBooking(prevState: BookingFormState, formData: FormData): Promise<BookingFormState> {
+  // Paused by the hotel under Site Settings: nothing is booked online until it is switched back on.
+  const site = await getSiteSettings();
+  if (site.bookingsPaused) return { message: site.bookingsPausedMessage };
+
   // Signing in is optional. Without an account the booking gets a secret key instead of an owner.
   const session = await auth();
   const userId = session?.user?.id ?? null;
@@ -126,10 +124,7 @@ export async function createBooking(prevState: BookingFormState, formData: FormD
       if (error instanceof SoldOutError) {
         return { message: 'Sorry, this room has just sold out for these dates. Please choose different dates.' };
       }
-      // P2034 = the transaction lost a race and can be retried; P2002 = reference collision.
-      const retryable =
-        error instanceof Prisma.PrismaClientKnownRequestError && (error.code === 'P2034' || error.code === 'P2002');
-      if (!retryable || attempt === 2) {
+      if (!isRetryableBookingError(error) || attempt === 2) {
         console.error('Failed to create booking', error);
         return { message: 'Something went wrong while saving your booking. Please try again.' };
       }
