@@ -123,10 +123,24 @@ export default async function AdminAvailability({ searchParams }: PageProps<'/ad
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center justify-between gap-3">
       <p className="text-sm text-slate-500">
         Showing <span className="font-semibold text-slate-700">{formatStayDate(checkIn)} → {formatStayDate(checkOut)}</span> · {nights}{' '}
         {nights === 1 ? 'night' : 'nights'}
       </p>
+      {/* What the tile colours mean */}
+      <ul className="flex flex-wrap gap-4 text-xs font-medium text-slate-500" aria-label="Legend">
+        {[
+          { label: 'Free', dot: 'bg-emerald-500' },
+          { label: 'Booked', dot: 'bg-sand-500' },
+        ].map((item) => (
+          <li key={item.label} className="inline-flex items-center gap-1.5">
+            <span className={`h-2.5 w-2.5 rounded-full ${item.dot}`} aria-hidden="true" />
+            {item.label}
+          </li>
+        ))}
+      </ul>
+      </div>
 
       {/* Totals */}
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -187,6 +201,10 @@ export default async function AdminAvailability({ searchParams }: PageProps<'/ad
                       {free} of {room.quantity}
                     </span>{' '}
                     free
+                    {/* Explains why fewer are free than the green tiles: these bookings still need one of them. */}
+                    {unassigned.length > 0 && room.roomNumbers.length > 0 && (
+                      <span className="block text-xs text-slate-400">{unassigned.length} held for {unassigned.length === 1 ? 'a booking' : 'bookings'} without a room</span>
+                    )}
                   </p>
                   {/* Share of the rooms already booked */}
                   <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-slate-100" aria-hidden="true">
@@ -221,7 +239,7 @@ export default async function AdminAvailability({ searchParams }: PageProps<'/ad
                       return (
                         <li key={number} data-room-booked={number}>
                           <Link
-                            href={`/admin/bookings/records?q=${encodeURIComponent(booking.reference)}`}
+                            href={booking.bookingStatus === 'PENDING' ? `/admin/bookings?q=${encodeURIComponent(booking.reference)}` : `/admin/bookings/records?view=all&q=${encodeURIComponent(booking.reference)}`}
                             title="Open this booking"
                             className="flex min-h-24 flex-col justify-between gap-1 rounded-xl border border-sand-200 bg-sand-50 px-4 py-3 transition-colors hover:border-sand-500"
                           >
@@ -264,7 +282,7 @@ export default async function AdminAvailability({ searchParams }: PageProps<'/ad
                           <Link
                             href={
                               booking.roomNumber
-                                ? `/admin/bookings/records?q=${encodeURIComponent(booking.reference)}`
+                                ? `/admin/bookings/records?view=all&q=${encodeURIComponent(booking.reference)}`
                                 : `/admin/bookings?q=${encodeURIComponent(booking.reference)}`
                             }
                             className="hover:underline"

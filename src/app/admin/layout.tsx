@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import AdminClock from "@/components/admin/AdminClock";
 import ThemeToggle from "@/components/ThemeToggle";
 import { BOOKING_SCOPES } from "@/lib/admin-bookings";
+import { getSiteSettings } from "@/lib/hotel";
 import prisma from "@/lib/prisma";
 
 export default async function AdminLayout({
@@ -12,7 +13,12 @@ export default async function AdminLayout({
   children: React.ReactNode;
 }) {
   // The sidebar count is fetched alongside the session check: each query is a long round trip to the database.
-  const [session, newBookings] = await Promise.all([auth(), prisma.booking.count({ where: BOOKING_SCOPES.new })]);
+  const [session, newBookings, site, unreadMessages] = await Promise.all([
+    auth(),
+    prisma.booking.count({ where: BOOKING_SCOPES.new }),
+    getSiteSettings(),
+    prisma.contactMessage.count({ where: { isRead: false, archivedAt: null } }),
+  ]);
 
   if (!session?.user) {
     redirect('/admin-login');
@@ -38,9 +44,10 @@ export default async function AdminLayout({
           </Link>
           {/* Bookings: two screens, with a count where work is waiting */}
           <div>
-            <p className="px-3 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-[0.15em] text-slate-500">Bookings</p>
+            <p className="px-3 py-2.5 text-sm font-medium">Bookings</p>
             <div className="ml-3 space-y-1 border-l border-white/10 pl-2">
               {[
+                { href: '/admin/bookings/walk-in', label: 'Walk-in booking', count: 0 },
                 { href: '/admin/bookings', label: 'New bookings', count: newBookings },
                 { href: '/admin/bookings/records', label: 'Booking records', count: 0 },
                 { href: '/admin/availability', label: 'Room availability', count: 0 },
@@ -64,8 +71,9 @@ export default async function AdminLayout({
           <Link href="/admin/amenities" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-white/10 hover:text-white transition-colors">
             Features & Facilities
           </Link>
-          <Link href="/admin/users" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-white/10 hover:text-white transition-colors">
-            Users & Guests
+          <Link href="/admin/messages" className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-white/10 hover:text-white transition-colors">
+            Messages
+            {unreadMessages > 0 && <span className="rounded-full bg-sand-500 px-2 py-0.5 text-[11px] font-bold text-white">{unreadMessages}</span>}
           </Link>
           <Link href="/admin/experiences" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-white/10 hover:text-white transition-colors">
             Experiences
@@ -98,6 +106,17 @@ export default async function AdminLayout({
         </header>
         {/* relative: keeps absolutely positioned children (e.g. sr-only labels) inside this scroll area, so they cannot stretch the page */}
         <main className="relative flex-1 overflow-y-auto p-8 bg-slate-50 print:overflow-visible print:bg-white print:p-0">
+          {/* A reminder while the public site or online booking is switched off. */}
+          {(site.maintenance || site.bookingsPaused) && (
+            <div role="status" className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl bg-amber-50 px-5 py-3 text-sm text-amber-700 ring-1 ring-inset ring-amber-200 print:hidden">
+              <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
+              <span className="font-medium">
+                {site.maintenance && 'Maintenance mode is on: visitors see the maintenance page. '}
+                {site.bookingsPaused && 'Online booking is paused.'}
+              </span>
+              <Link href="/admin/settings" className="ml-auto font-semibold underline underline-offset-2">Site Settings</Link>
+            </div>
+          )}
           {children}
         </main>
       </div>
