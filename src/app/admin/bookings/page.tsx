@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import prisma from '@/lib/prisma';
 import BookingList from '@/components/admin/BookingList';
 import { BOOKING_SCOPES, firstParam, listBookings } from '@/lib/admin-bookings';
@@ -11,7 +12,7 @@ export default async function AdminNewBookings({ searchParams }: PageProps<'/adm
 
   const [result, arrivingToday, confirmedUpcoming, waiting] = await Promise.all([
     listBookings({ where: BOOKING_SCOPES.new, search: firstParam(params.q), page: Number(firstParam(params.page)) }),
-    prisma.booking.count({ where: { checkIn: today, bookingStatus: { not: 'CANCELLED' } } }),
+    prisma.booking.count({ where: { checkIn: today, bookingStatus: { in: ['PENDING', 'CONFIRMED'] } } }),
     prisma.booking.count({ where: { bookingStatus: 'CONFIRMED', checkIn: { gt: today } } }),
     prisma.booking.count({ where: BOOKING_SCOPES.new }),
   ]);
@@ -24,9 +25,14 @@ export default async function AdminNewBookings({ searchParams }: PageProps<'/adm
 
   return (
     <div className='space-y-6'>
-      <div>
-        <h1 className='text-2xl font-bold text-slate-800'>New Bookings</h1>
-        <p className='text-sm text-slate-500 mt-1'>Bookings waiting for the hotel. Assign a room to confirm one, or cancel it.</p>
+      <div className='flex flex-wrap items-end justify-between gap-3'>
+        <div>
+          <h1 className='text-2xl font-bold text-slate-800'>New Bookings</h1>
+          <p className='text-sm text-slate-500 mt-1'>Bookings waiting for the hotel. Assign a room to confirm one, or cancel it.</p>
+        </div>
+        <Link href='/admin/bookings/walk-in' className='inline-flex h-10 items-center gap-1.5 rounded-lg bg-ocean-600 px-4 text-sm font-semibold text-white shadow-sm shadow-ocean-600/20 transition-colors hover:bg-ocean-700'>
+          <span aria-hidden='true' className='text-lg leading-none'>+</span> Walk-in booking
+        </Link>
       </div>
 
       <div className='grid gap-4 sm:grid-cols-3'>

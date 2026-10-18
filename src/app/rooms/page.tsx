@@ -10,6 +10,8 @@ import SiteNav from '@/components/SiteNav';
 import { getBookedCounts } from '@/lib/availability';
 import { formatStayDate, todayDateOnly, validateStay } from '@/lib/booking';
 import prisma from '@/lib/prisma';
+import BookingPausedNotice from '@/components/booking/BookingPausedNotice';
+import { getSiteSettings } from '@/lib/hotel';
 
 export const metadata: Metadata = { title: 'Rooms | N34 Mirissa' };
 
@@ -65,7 +67,8 @@ export default async function PublicRoomsPage({ searchParams }: PageProps<'/room
   const hasDates = !!(checkIn || checkOut);
   const stay = hasDates ? validateStay(checkIn, checkOut) : null;
 
-  const [rooms, facilities, bookedCounts] = await Promise.all([
+  const [site, rooms, facilities, bookedCounts] = await Promise.all([
+    getSiteSettings(),
     prisma.room.findMany({
       where: {
         isActive: true,
@@ -192,6 +195,11 @@ export default async function PublicRoomsPage({ searchParams }: PageProps<'/room
 
       {/* Rooms */}
       <main className="mx-auto max-w-7xl px-4 pb-10 pt-14 sm:px-6 lg:px-8">
+        {site.bookingsPaused && (
+          <div className="mb-8">
+            <BookingPausedNotice site={site} />
+          </div>
+        )}
         {first(params.unavailable) && (
           <div className="mb-8">
             <Alert variant="info">The room you tried to book is no longer available. Here are the rooms you can book now.</Alert>
