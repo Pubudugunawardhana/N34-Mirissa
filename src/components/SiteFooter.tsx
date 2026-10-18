@@ -1,12 +1,10 @@
 import Link from 'next/link';
-import prisma from '@/lib/prisma';
+import SocialIcons, { hasSocialLinks } from '@/components/SocialIcons';
+import { getSiteSettings } from '@/lib/hotel';
 
-// Shown until the admin fills these in under Site Settings.
+// The short line about the hotel under the logo.
 const FALLBACK = {
   about: 'A serene beachfront getaway on the Mirissa coast, where the ocean breeze meets luxury comfort.',
-  address: 'Beach Road, Mirissa, Sri Lanka',
-  phone: '+94 77 123 4567',
-  email: 'info@n34mirissa.com',
 };
 
 const EXPLORE_LINKS = [
@@ -50,10 +48,8 @@ function FooterLinks({ links }: { links: { href: string; label: string }[] }) {
 }
 
 export default async function SiteFooter() {
-  const settings = await prisma.setting.findFirst();
-
-  const phone = settings?.phone || FALLBACK.phone;
-  const email = settings?.email || FALLBACK.email;
+  const site = await getSiteSettings();
+  const { phone, email } = site;
 
   return (
     <footer>
@@ -65,26 +61,11 @@ export default async function SiteFooter() {
                 <span className="font-display text-3xl font-bold tracking-wide text-white">N34</span>
                 <span className="text-sm font-medium uppercase tracking-[0.25em] text-sand-200">Mirissa</span>
               </Link>
-              <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">{settings?.aboutUs || FALLBACK.about}</p>
+              <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-400">{FALLBACK.about}</p>
 
-              {(settings?.facebookUrl || settings?.instagramUrl) && (
-                <div className="mt-6 flex gap-3">
-                  {settings.facebookUrl && (
-                    <a href={settings.facebookUrl} target="_blank" rel="noopener noreferrer" aria-label="Facebook" className={socialClass}>
-                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                        <path d="M13.5 21v-7.5h2.6l.4-3h-3V8.6c0-.9.3-1.5 1.6-1.5h1.5V4.4c-.3 0-1.2-.1-2.2-.1-2.2 0-3.7 1.3-3.7 3.8v2.4H8v3h2.7V21h2.8z" />
-                      </svg>
-                    </a>
-                  )}
-                  {settings.instagramUrl && (
-                    <a href={settings.instagramUrl} target="_blank" rel="noopener noreferrer" aria-label="Instagram" className={socialClass}>
-                      <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                        <rect x="3.5" y="3.5" width="17" height="17" rx="5" />
-                        <circle cx="12" cy="12" r="4" />
-                        <path d="M17.2 6.8h.01" />
-                      </svg>
-                    </a>
-                  )}
+              {hasSocialLinks(site.social) && (
+                <div className="mt-6 flex flex-wrap gap-3">
+                  <SocialIcons links={site.social} className={socialClass} iconClassName="h-4 w-4" />
                 </div>
               )}
             </div>
@@ -107,7 +88,7 @@ export default async function SiteFooter() {
                     <path d="M12 21s7-6.2 7-11.5a7 7 0 1 0-14 0C5 14.8 12 21 12 21z" />
                     <circle cx="12" cy="9.5" r="2.5" />
                   </svg>
-                  <span>N34 Mirissa, {FALLBACK.address}</span>
+                  <span>{site.address}</span>
                 </li>
                 <li className="flex gap-3">
                   <svg className={iconClass} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
