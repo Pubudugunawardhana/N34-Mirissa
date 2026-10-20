@@ -159,12 +159,14 @@ export default async function Home() {
               <h3 className="text-xl font-bold text-slate-800 mb-3">Luxury Amenities</h3>
               <p className="text-slate-500 text-sm leading-relaxed">From premium bedding to high-speed WiFi, we provide everything you need for a comfortable stay.</p>
             </div>
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
+            <div className="relative bg-white p-8 rounded-2xl shadow-sm border border-slate-100 hover:shadow-md transition-shadow">
               <span className="w-14 h-14 bg-ocean-50 text-ocean-600 rounded-full flex items-center justify-center mx-auto mb-6 text-2xl" suppressHydrationWarning>
                 🍽️
               </span>
-              <h3 className="text-xl font-bold text-slate-800 mb-3">Exquisite Dining</h3>
-              <p className="text-slate-500 text-sm leading-relaxed">Savor authentic Sri Lankan seafood and international cuisines at our ocean-view restaurant.</p>
+              <h3 className="text-xl font-bold text-slate-800 mb-3">
+                <Link href="/dining" className="after:absolute after:inset-0 hover:text-ocean-700">Exquisite Dining</Link>
+              </h3>
+              <p className="text-slate-500 text-sm leading-relaxed">Fresh Sri Lankan breakfast, lunch and dinner from our own kitchen, served by the ocean.</p>
             </div>
           </div>
         </div>

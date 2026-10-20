@@ -18,21 +18,6 @@ export async function createExperience(formData: FormData) {
   redirect('/admin/experiences');
 }
 
-export async function createDining(formData: FormData) {
-  await prisma.dining.create({
-    data: {
-      name: formData.get('name') as string,
-      type: formData.get('type') as string,
-      openingHours: formData.get('openingHours') as string,
-      location: formData.get('location') as string,
-      description: formData.get('description') as string,
-    }
-  });
-  revalidatePath('/admin/dining');
-  revalidatePath('/dining');
-  redirect('/admin/dining');
-}
-
 export async function createWedding(formData: FormData) {
   await prisma.weddingPackage.create({
     data: {

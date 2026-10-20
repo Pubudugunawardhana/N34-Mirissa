@@ -68,6 +68,9 @@ export default async function AdminLayout({
           <Link href="/admin/rooms" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-white/10 hover:text-white transition-colors">
             Rooms Management
           </Link>
+          <Link href="/admin/dining" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-white/10 hover:text-white transition-colors">
+            Dining
+          </Link>
           <Link href="/admin/amenities" className="block px-3 py-2.5 rounded-lg text-sm font-medium hover:bg-white/10 hover:text-white transition-colors">
             Features & Facilities
           </Link>
