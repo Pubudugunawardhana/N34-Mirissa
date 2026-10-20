@@ -1,7 +1,7 @@
 import prisma from '@/lib/prisma';
 import Link from 'next/link';
 import { BookingStatusBadge } from '@/components/StatusBadge';
-import { addDays, formatLKR, formatStayDate, parseDateOnly, todayDateOnly } from '@/lib/booking';
+import { addDays, formatLKR, formatStayDate, nightsBetween, parseDateOnly, todayDateOnly } from '@/lib/booking';
 
 export const dynamic = 'force-dynamic';
 
@@ -74,7 +74,7 @@ export default async function AdminDashboard({ searchParams }: PageProps<'/admin
     { title: range === 'all' ? 'Total Bookings' : 'Bookings', value: totalBookings, caption },
     { title: 'Total Rooms', value: totalRooms, caption: 'All room types' },
     { title: range === 'all' ? 'Registered Users' : 'New Users', value: totalUsers, caption },
-    { title: 'New Inquiries', value: totalMessages, caption },
+    { title: 'New Inquiries', value: totalMessages, caption, href: '/admin/messages?view=unread' },
   ];
 
   return (
@@ -114,50 +114,98 @@ export default async function AdminDashboard({ searchParams }: PageProps<'/admin
 
       {/* Stats row */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <div key={stat.title} className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-            <h3 className="text-sm font-medium text-slate-500 mb-1">{stat.title}</h3>
-            <p className="text-3xl font-bold text-slate-800">{stat.value}</p>
-            <p className="mt-1 text-xs text-slate-400">{stat.caption}</p>
-          </div>
-        ))}
+        {stats.map((stat) => {
+          const body = (
+            <>
+              <h3 className="text-sm font-medium text-slate-500 mb-1">{stat.title}</h3>
+              <p className="text-3xl font-bold text-slate-800">{stat.value}</p>
+              <p className="mt-1 text-xs text-slate-400">{stat.caption}</p>
+            </>
+          );
+          const tile = 'block bg-white p-6 rounded-xl border border-slate-200 shadow-sm';
+          return 'href' in stat && stat.href ? (
+            <Link key={stat.title} href={stat.href} className={`${tile} transition-colors hover:border-ocean-400`}>
+              {body}
+            </Link>
+          ) : (
+            <div key={stat.title} className={tile}>
+              {body}
+            </div>
+          );
+        })}
       </div>
 
-      {/* Recent Bookings */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-        <div className="px-6 py-5 border-b border-slate-200 flex justify-between items-center">
+      {/* Recent Bookings: one card each, like the booking records */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-800">
             Recent Bookings {range !== 'all' && <span className="text-sm font-normal text-slate-400">· {caption}</span>}
           </h2>
-          <Link href="/admin/bookings/records" className="text-sm text-ocean-600 font-medium hover:text-ocean-700">View All</Link>
+          <Link href="/admin/bookings/records?view=all" className="text-sm font-medium text-ocean-600 hover:text-ocean-700">View All</Link>
         </div>
         {recentBookings.length === 0 ? (
-          <div className="p-6">
-            <div className="text-center py-10 text-slate-500 text-sm">
-              {range === 'all' ? 'No bookings have been made yet.' : 'No bookings were made in this period.'}
-            </div>
+          <div className="rounded-2xl border border-dashed border-slate-300 bg-white px-6 py-16 text-center text-sm text-slate-500">
+            {range === 'all' ? 'No bookings have been made yet.' : 'No bookings were made in this period.'}
           </div>
         ) : (
-          <ul className="divide-y divide-slate-100">
-            {recentBookings.map((booking) => (
-              <li key={booking.id} className="px-6 py-4 flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <p className="text-sm font-medium text-slate-800">
-                    {booking.guestName} · {booking.room.name}
-                  </p>
-                  <p className="text-xs text-slate-500">
-                    <span className="font-mono">{booking.reference}</span> · {formatStayDate(booking.checkIn)} → {formatStayDate(booking.checkOut)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm font-medium text-slate-700">{formatLKR(booking.totalAmount)}</span>
-                  <BookingStatusBadge status={booking.bookingStatus} />
-                </div>
-              </li>
-            ))}
+          <ul className="space-y-4">
+            {recentBookings.map((booking) => {
+              const nights = nightsBetween(booking.checkIn, booking.checkOut);
+              // Waiting bookings are handled on New bookings; the rest live in the records.
+              const href =
+                booking.bookingStatus === 'PENDING'
+                  ? `/admin/bookings?q=${encodeURIComponent(booking.reference)}`
+                  : `/admin/bookings/records?view=all&q=${encodeURIComponent(booking.reference)}`;
+              return (
+                <li key={booking.id}>
+                  <Link
+                    href={href}
+                    className="grid gap-x-6 gap-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-ocean-400 md:grid-cols-2 xl:grid-cols-[1.1fr_1fr_1.1fr_auto]"
+                  >
+                    {/* Guest */}
+                    <div className="min-w-0">
+                      <div className="mb-2 flex flex-wrap items-center gap-2">
+                        <span className="rounded-md bg-ocean-50 px-2 py-1 font-mono text-xs font-semibold tracking-wider text-ocean-700">{booking.reference}</span>
+                        {booking.source === 'WALK_IN' ? (
+                          <span className="rounded-full bg-sand-50 px-2 py-0.5 text-[11px] font-semibold text-sand-600 ring-1 ring-inset ring-sand-200">Walk-in</span>
+                        ) : (
+                          !booking.userId && <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-600">No account</span>
+                        )}
+                      </div>
+                      <p className="font-semibold text-slate-800">{booking.guestName || 'Guest'}</p>
+                      {booking.email && <p className="break-all text-sm text-slate-500">{booking.email}</p>}
+                    </div>
+
+                    {/* Room */}
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Room</p>
+                      <p className="mt-1 font-semibold text-slate-800">{booking.room.name}</p>
+                      <p className="text-sm text-slate-600">{booking.roomNumber ? `Room ${booking.roomNumber}` : 'No room assigned yet'}</p>
+                    </div>
+
+                    {/* Stay */}
+                    <div className="min-w-0">
+                      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Stay</p>
+                      <p className="mt-1 text-sm font-medium text-slate-800">
+                        {formatStayDate(booking.checkIn)} → {formatStayDate(booking.checkOut)}
+                      </p>
+                      <p className="text-sm text-slate-500">
+                        {nights} {nights === 1 ? 'night' : 'nights'} · booked {booking.createdAt.toLocaleDateString('en-GB', { timeZone: 'Asia/Colombo' })}
+                      </p>
+                    </div>
+
+                    {/* Amount and status */}
+                    <div className="flex items-center justify-between gap-3 md:col-span-2 xl:col-span-1 xl:w-44 xl:flex-col xl:items-end xl:justify-start">
+                      <BookingStatusBadge status={booking.bookingStatus} />
+                      <p className="text-lg font-semibold text-ocean-900">{formatLKR(booking.totalAmount)}</p>
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
         )}
-      </div>
+      </section>
     </div>
   );
 }
