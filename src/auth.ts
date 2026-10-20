@@ -2,6 +2,7 @@ import NextAuth, { CredentialsSignin } from 'next-auth';
 import { authConfig } from './auth.config';
 import Credentials from 'next-auth/providers/credentials';
 import bcrypt from 'bcryptjs';
+import prisma from '@/lib/prisma';
 import { findUserByEmail } from '@/lib/users';
 import { LoginSchema, isEmailVerificationRequired } from '@/lib/validation';
 
@@ -13,9 +14,27 @@ export class AccountDisabledError extends CredentialsSignin {
   code = 'account_disabled';
 }
 
-export const { auth, signIn, signOut, handlers: { GET, POST } } = NextAuth({
+export const { auth, signIn, signOut, unstable_update: refreshSession, handlers: { GET, POST } } = NextAuth({
   ...authConfig,
   session: { strategy: 'jwt' },
+  callbacks: {
+    ...authConfig.callbacks,
+    async jwt(params) {
+      const token = await authConfig.callbacks.jwt(params);
+
+      // After a profile change the name, email and photo are re-read from the database.
+      // Whatever the browser sent with the update request is ignored on purpose.
+      if (params.trigger === 'update' && token.sub) {
+        const user = await prisma.user.findUnique({ where: { id: token.sub } });
+        if (user) {
+          token.name = user.name;
+          token.email = user.email;
+          token.picture = user.image;
+        }
+      }
+      return token;
+    },
+  },
   providers: [
     Credentials({
       async authorize(credentials) {
@@ -40,6 +59,7 @@ export const { auth, signIn, signOut, handlers: { GET, POST } } = NextAuth({
           id: user.id,
           name: user.name,
           email: user.email,
+          image: user.image,
           role: user.role,
         };
       },
