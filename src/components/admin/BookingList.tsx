@@ -6,7 +6,7 @@ import UpdateBookingDialog from './UpdateBookingDialog';
 import BookingSearch from './BookingSearch';
 import { BookingStatusBadge, PaymentStatusBadge } from '@/components/StatusBadge';
 import { BOOKINGS_PER_PAGE, type BookingListResult } from '@/lib/admin-bookings';
-import { MEAL_PLANS, formatLKR, formatStayDate, guestSummary, nightsBetween, toDateOnly, todayDateOnly } from '@/lib/booking';
+import { MEAL_NAMES, MEAL_PLANS, formatLKR, formatStayDate, guestSummary, nightsBetween, toDateOnly, todayDateOnly } from '@/lib/booking';
 
 type BookingListProps = {
   result: BookingListResult;
@@ -97,6 +97,7 @@ function UpdateBooking({ booking }: { booking: Booking }) {
       pricePerNight={booking.pricePerNight}
       mealPlan={booking.mealPlan}
       mealTotal={booking.mealTotal}
+      dishPrices={Object.fromEntries(booking.mealChoices.map((choice) => [choice.meal, choice.price]))}
       totalAmount={booking.totalAmount}
       amountPaid={booking.amountPaid}
       charges={booking.charges.map((charge) => ({
@@ -239,6 +240,15 @@ export default function BookingList({ result, basePath, keep = {}, mode, emptyTe
                   <p className="text-sm text-slate-500">
                     {guestSummary(booking.adults, booking.children)} · {MEAL_PLANS[booking.mealPlan].label}
                   </p>
+                  {booking.mealChoices.length > 0 && (
+                    <p className="mt-1 flex flex-wrap gap-1.5" data-meal-choices>
+                      {booking.mealChoices.map((choice) => (
+                        <span key={choice.id} className="rounded-md bg-sand-50 px-2 py-0.5 text-[11px] font-medium text-sand-600 ring-1 ring-inset ring-sand-200">
+                          {MEAL_NAMES[choice.meal]}: {choice.dishName}
+                        </span>
+                      ))}
+                    </p>
+                  )}
                   {booking.specialRequests && <p className="mt-1 text-xs text-slate-500">Note: {booking.specialRequests}</p>}
                 </div>
 
