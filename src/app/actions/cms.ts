@@ -3,21 +3,6 @@ import prisma from '@/lib/prisma';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 
-export async function createExperience(formData: FormData) {
-  await prisma.experience.create({
-    data: {
-      title: formData.get('title') as string,
-      description: formData.get('description') as string,
-      price: parseFloat(formData.get('price') as string),
-      duration: formData.get('time') as string,
-      phone: formData.get('contactInfo') as string,
-    }
-  });
-  revalidatePath('/admin/experiences');
-  revalidatePath('/experiences');
-  redirect('/admin/experiences');
-}
-
 export async function createWedding(formData: FormData) {
   await prisma.weddingPackage.create({
     data: {
