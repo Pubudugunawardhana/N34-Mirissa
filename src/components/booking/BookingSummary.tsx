@@ -1,5 +1,5 @@
-import type { Booking, BookingCharge } from '@prisma/client';
-import { MEAL_PLANS, formatLKR, formatStayDate, guestSummary, nightsBetween } from '@/lib/booking';
+import type { Booking, BookingCharge, BookingMealChoice } from '@prisma/client';
+import { MEAL_NAMES, MEAL_PLANS, formatLKR, formatStayDate, guestSummary, nightsBetween } from '@/lib/booking';
 
 type Row = { label: string; value: string };
 
@@ -22,7 +22,7 @@ function addedOn(date: Date) {
 }
 
 // The facts of a booking as a two-column list, with the full bill. Shared by the confirmation page and the receipt.
-export default function BookingSummary({ booking, roomName }: { booking: Booking & { charges?: BookingCharge[] }; roomName: string }) {
+export default function BookingSummary({ booking, roomName }: { booking: Booking & { charges?: BookingCharge[]; mealChoices?: BookingMealChoice[] }; roomName: string }) {
   const nights = nightsBetween(booking.checkIn, booking.checkOut);
   const roomTotal = booking.pricePerNight * nights;
   const balance = Math.max(0, booking.totalAmount - booking.amountPaid);
@@ -35,6 +35,8 @@ export default function BookingSummary({ booking, roomName }: { booking: Booking
     { label: 'Check-out', value: formatStayDate(booking.checkOut) },
     { label: 'Guests', value: guestSummary(booking.adults, booking.children) },
     { label: 'Meal option', value: MEAL_PLANS[booking.mealPlan].label },
+    // The dish chosen for each included meal.
+    ...(booking.mealChoices ?? []).map((choice) => ({ label: `· ${MEAL_NAMES[choice.meal]}`, value: choice.dishName })),
     { label: `Room (${nights} ${nights === 1 ? 'night' : 'nights'})`, value: formatLKR(roomTotal) },
     { label: 'Meals', value: formatLKR(booking.mealTotal) },
   ];
