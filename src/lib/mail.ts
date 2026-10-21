@@ -1,9 +1,9 @@
-import type { Booking as BookingRow, BookingCharge } from '@prisma/client';
+import type { Booking as BookingRow, BookingCharge, BookingMealChoice } from '@prisma/client';
 
-// Extras are listed when they were loaded with the booking.
-type Booking = BookingRow & { charges?: BookingCharge[] };
+// Extras and dish choices are listed when they were loaded with the booking.
+type Booking = BookingRow & { charges?: BookingCharge[]; mealChoices?: BookingMealChoice[] };
 import nodemailer from 'nodemailer';
-import { MEAL_PLANS, formatLKR, formatStayDate, guestSummary, nightsBetween } from '@/lib/booking';
+import { MEAL_NAMES, MEAL_PLANS, formatLKR, formatStayDate, guestSummary, nightsBetween } from '@/lib/booking';
 
 const APP_NAME = 'N34 Mirissa';
 
@@ -340,6 +340,7 @@ export function renderBookingEmail(booking: Booking, room: BookingRoom, kind: Bo
                   ${detailRow('Length of stay', nightsLabel)}
                   ${detailRow('Guests', guests)}
                   ${detailRow('Meals', meal)}
+                  ${(booking.mealChoices ?? []).map((choice) => detailRow(`${MEAL_NAMES[choice.meal]} choice`, choice.dishName)).join('')}
                   ${detailRow(`Room (${formatLKR(booking.pricePerNight)} × ${nightsLabel})`, formatLKR(roomTotal))}
                   ${detailRow('Meals total', formatLKR(booking.mealTotal))}
                   ${extras}

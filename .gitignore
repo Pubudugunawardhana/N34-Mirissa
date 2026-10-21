@@ -45,3 +45,6 @@ next-env.d.ts
 .claude/
 .cursor/
 .devin/
+
+# admin-uploaded room photos (local fallback when Cloudinary is not configured)
+/public/uploads/

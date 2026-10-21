@@ -47,7 +47,7 @@ export async function listBookings({ where, search, page = 1, orderBy = { create
   const fetchPage = (pageNumber: number) =>
     prisma.booking.findMany({
       where: filter,
-      include: { room: true, charges: { orderBy: { createdAt: 'asc' } } },
+      include: { room: true, charges: { orderBy: { createdAt: 'asc' } }, mealChoices: { orderBy: { meal: 'asc' } } },
       orderBy,
       skip: (pageNumber - 1) * BOOKINGS_PER_PAGE,
       take: BOOKINGS_PER_PAGE,
@@ -66,7 +66,7 @@ export async function listBookings({ where, search, page = 1, orderBy = { create
   return { bookings, total, page: current, pages, search: term ?? '' };
 }
 
-type ListedBooking = Prisma.BookingGetPayload<{ include: { room: true; charges: true } }>;
+type ListedBooking = Prisma.BookingGetPayload<{ include: { room: true; charges: true; mealChoices: true } }>;
 
 // Adds, to each booking, the room numbers of its room type that other bookings hold for overlapping nights,
 // so the "Assign a room" window can show which rooms are still free. One query for the whole page.

@@ -14,7 +14,7 @@ export default async function BookingReceiptPage({ params, searchParams }: PageP
   const justCreated = query.new === '1';
 
   const [booking, hotel] = await Promise.all([
-    prisma.booking.findUnique({ where: { id }, include: { room: true, charges: { orderBy: { createdAt: 'asc' } } } }),
+    prisma.booking.findUnique({ where: { id }, include: { room: true, charges: { orderBy: { createdAt: 'asc' } }, mealChoices: { orderBy: { meal: 'asc' } } } }),
     getHotelContact(),
   ]);
   if (!booking) notFound();

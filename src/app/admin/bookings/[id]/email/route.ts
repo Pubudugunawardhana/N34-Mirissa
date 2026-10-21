@@ -10,7 +10,7 @@ export async function GET(request: Request, { params }: RouteContext<'/admin/boo
   const { id } = await params;
   const booking = await prisma.booking.findUnique({
     where: { id },
-    include: { charges: { orderBy: { createdAt: 'asc' } }, room: { include: { images: { orderBy: { position: 'asc' }, take: 1 } } } },
+    include: { charges: { orderBy: { createdAt: 'asc' } }, mealChoices: { orderBy: { meal: 'asc' } }, room: { include: { images: { orderBy: { position: 'asc' }, take: 1 } } } },
   });
   if (!booking) return new Response('Not found', { status: 404 });
 

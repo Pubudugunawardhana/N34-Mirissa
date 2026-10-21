@@ -8,7 +8,7 @@ import { redirect } from 'next/navigation';
 import { z } from 'zod';
 import { auth } from '@/auth';
 import { getRoomsLeft } from '@/lib/availability';
-import { quoteBooking, todayDateOnly, validateStay } from '@/lib/booking';
+import { MEAL_PLAN_MEALS, quoteBooking, todayDateOnly, validateStay } from '@/lib/booking';
 import { bookingAccess } from '@/lib/booking-access';
 import { SoldOutError, isRetryableBookingError, newReference } from '@/lib/booking-create';
 import { getSiteSettings } from '@/lib/hotel';
@@ -34,6 +34,22 @@ export async function checkAvailability(roomId: string, checkIn: string, checkOu
   if (!room) return { ok: false, message: 'This room is no longer available.' };
 
   return { ok: true, roomsLeft: await getRoomsLeft(room, stay.checkIn, stay.checkOut) };
+}
+
+async function readMealChoices(formData: FormData, mealPlan: keyof typeof MEAL_PLAN_MEALS) {
+  const wanted = MEAL_PLAN_MEALS[mealPlan]
+    .map((meal) => ({ meal, id: String(formData.get(`meal_${meal}`) ?? '') }))
+    .filter((choice) => choice.id);
+  if (wanted.length === 0) return [];
+
+  const dishes = await prisma.menuItem.findMany({
+    where: { id: { in: wanted.map((choice) => choice.id) } },
+    include: { service: { select: { key: true } } },
+  });
+  return wanted.flatMap(({ meal, id }) => {
+    const dish = dishes.find((item) => item.id === id && item.service.key === meal);
+    return dish ? [{ meal, menuItemId: dish.id, dishName: dish.name, price: dish.price }] : [];
+  });
 }
 
 export async function createBooking(prevState: BookingFormState, formData: FormData): Promise<BookingFormState> {
@@ -81,8 +97,18 @@ export async function createBooking(prevState: BookingFormState, formData: FormD
     };
   }
 
-  // The price never comes from the browser.
-  const quote = quoteBooking({ pricePerNight: room.price, nights: stay.nights, adults, children, mealPlan });
+  // A dish chosen for each meal the plan includes. Anything else (another meal, a dish from a different menu) is ignored.
+  const mealChoices = await readMealChoices(formData, mealPlan);
+
+  // The price never comes from the browser: room, plus each meal at its chosen dish's price or its share of the plan.
+  const quote = quoteBooking({
+    pricePerNight: room.price,
+    nights: stay.nights,
+    adults,
+    children,
+    mealPlan,
+    dishPrices: Object.fromEntries(mealChoices.map((choice) => [choice.meal, choice.price])),
+  });
 
   let bookingId: string | undefined;
   for (let attempt = 0; attempt < 3 && !bookingId; attempt++) {
@@ -104,11 +130,14 @@ export async function createBooking(prevState: BookingFormState, formData: FormD
               children,
               mealPlan,
               specialRequests: specialRequests || null,
+              mealChoices: { create: mealChoices },
               pricePerNight: room.price,
               mealTotal: quote.mealTotal,
               totalAmount: quote.total,
               ...guest,
             },
+            // The confirmation email lists the chosen dishes.
+            include: { mealChoices: { orderBy: { meal: 'asc' } } },
           });
         },
         { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },

@@ -32,7 +32,7 @@ export default async function BookingConfirmationPage({ params, searchParams }: 
 
   const [session, booking] = await Promise.all([
     auth(),
-    prisma.booking.findUnique({ where: { id }, include: { room: true, charges: { orderBy: { createdAt: 'asc' } } } }),
+    prisma.booking.findUnique({ where: { id }, include: { room: true, charges: { orderBy: { createdAt: 'asc' } }, mealChoices: { orderBy: { meal: 'asc' } } } }),
   ]);
 
   // Same 404 for "does not exist" and "not yours", so booking ids cannot be probed.

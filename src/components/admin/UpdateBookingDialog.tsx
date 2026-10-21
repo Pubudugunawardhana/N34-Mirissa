@@ -37,6 +37,8 @@ type UpdateBookingDialogProps = {
   pricePerNight: number;
   mealPlan: MealPlan;
   mealTotal: number;
+  // Prices of the dishes the guest chose, per meal; they replace that meal's share of the plan.
+  dishPrices: Partial<Record<'BREAKFAST' | 'LUNCH' | 'DINNER', number | null>>;
   totalAmount: number;
   amountPaid: number;
   charges: ChargeRow[];
@@ -200,10 +202,10 @@ function RoomTab({ assignAction, reference, roomId, roomName, roomNumbers, taken
   );
 }
 
-function MealsTab({ mealAction, mealPlan, mealTotal, nights, adults, childCount: children, pricePerNight }: UpdateBookingDialogProps) {
+function MealsTab({ mealAction, mealPlan, mealTotal, nights, adults, childCount: children, pricePerNight, dishPrices }: UpdateBookingDialogProps) {
   const [state, formAction, pending] = useActionState(mealAction, {});
   const [chosen, setChosen] = useState<MealPlan>(mealPlan);
-  const mealsFor = (plan: MealPlan) => quoteBooking({ pricePerNight, nights, adults, children, mealPlan: plan }).mealTotal;
+  const mealsFor = (plan: MealPlan) => quoteBooking({ pricePerNight, nights, adults, children, mealPlan: plan, dishPrices }).mealTotal;
   const guests = adults + children;
 
   return (

@@ -8,7 +8,7 @@ type Db = Pick<typeof prisma, 'booking'>;
 // Works out a booking's bill again after its meal plan or extra charges change, inside the caller's transaction:
 // room (price when booked × nights) + meals (current plan) + extras. The payment status follows what is still owed.
 export async function recalculateBooking(tx: Db, bookingId: string) {
-  const booking = await tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { charges: true } });
+  const booking = await tx.booking.findUniqueOrThrow({ where: { id: bookingId }, include: { charges: true, mealChoices: true } });
 
   const { roomTotal, mealTotal } = quoteBooking({
     pricePerNight: booking.pricePerNight,
@@ -16,6 +16,8 @@ export async function recalculateBooking(tx: Db, bookingId: string) {
     adults: booking.adults,
     children: booking.children,
     mealPlan: booking.mealPlan,
+    // Chosen dishes keep the price they had when chosen.
+    dishPrices: Object.fromEntries(booking.mealChoices.map((choice) => [choice.meal, choice.price])),
   });
   const extrasTotal = booking.charges.reduce((sum, charge) => sum + charge.quantity * charge.unitPrice, 0);
   const totalAmount = roomTotal + mealTotal + extrasTotal;

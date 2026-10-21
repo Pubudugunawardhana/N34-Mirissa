@@ -2,7 +2,7 @@
 
 import type { BookingStatus, PaymentStatus } from '@prisma/client';
 import { z } from 'zod';
-import { MEAL_PLAN_KEYS, type MealPlanKey } from '@/lib/booking';
+import { MEAL_PLAN_KEYS, MEAL_PLAN_MEALS, type MealPlanKey } from '@/lib/booking';
 import { recalculateBooking } from '@/lib/booking-bill';
 import { sendPaymentReceivedEmail } from '@/lib/mail';
 import prisma from '@/lib/prisma';
@@ -43,7 +43,7 @@ export async function setPaymentStatus(bookingId: string, status: PaymentStatus)
     where: { id: bookingId },
     // "Paid" settles the whole bill, extras included; "Unpaid" clears what was recorded.
     data: { paymentStatus: status, ...(status === 'PAID' ? { amountPaid: before.totalAmount } : status === 'PENDING' ? { amountPaid: 0 } : {}) },
-    include: { charges: { orderBy: { createdAt: 'asc' } }, room: { include: { images: { orderBy: { position: 'asc' }, take: 1 } } } },
+    include: { charges: { orderBy: { createdAt: 'asc' } }, mealChoices: { orderBy: { meal: 'asc' } }, room: { include: { images: { orderBy: { position: 'asc' }, take: 1 } } } },
   });
 
   // The guest gets a receipt when the stay becomes paid; marking it unpaid again sends nothing.
@@ -112,6 +112,7 @@ export async function changeMealPlan(bookingId: string, prevState: BillFormState
 
   await prisma.$transaction(async (tx) => {
     await tx.booking.update({ where: { id: bookingId }, data: { mealPlan } });
+    await tx.bookingMealChoice.deleteMany({ where: { bookingId, meal: { notIn: MEAL_PLAN_MEALS[mealPlan] } } });
     await recalculateBooking(tx, bookingId);
   });
   revalidateBookings();

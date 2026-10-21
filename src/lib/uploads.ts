@@ -12,7 +12,7 @@ const ALLOWED_TYPES: Record<string, string> = {
 export const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 
 // Each kind of upload gets its own folder, both on Cloudinary and in the local fallback.
-type UploadKind = 'rooms' | 'avatars' | 'dining';
+type UploadKind = 'rooms' | 'avatars' | 'dining' | 'experiences';
 
 const LOCAL_ROOT = path.join(process.cwd(), 'public', 'uploads');
 const LOCAL_URL_ROOT = '/uploads/';
@@ -83,3 +83,6 @@ export const removeAvatarFile = (image: StoredImage) => removeImageFile(image, '
 
 export const uploadDiningImage = (file: File) => uploadImage(file, 'dining');
 export const removeDiningImageFile = (image: StoredImage) => removeImageFile(image, 'dining');
+
+export const uploadExperienceImage = (file: File) => uploadImage(file, 'experiences');
+export const removeExperienceImageFile = (image: StoredImage) => removeImageFile(image, 'experiences');
