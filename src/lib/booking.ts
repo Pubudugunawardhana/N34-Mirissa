@@ -11,6 +11,16 @@ export type MealPlanKey = keyof typeof MEAL_PLANS;
 
 export const MEAL_PLAN_KEYS = Object.keys(MEAL_PLANS) as MealPlanKey[];
 
+// The meals each plan includes; the guest can pick a dish from the Dining menu for each.
+export const MEAL_PLAN_MEALS: Record<MealPlanKey, ('BREAKFAST' | 'LUNCH' | 'DINNER')[]> = {
+  ROOM_ONLY: [],
+  BED_AND_BREAKFAST: ['BREAKFAST'],
+  HALF_BOARD: ['BREAKFAST', 'DINNER'],
+  FULL_BOARD: ['BREAKFAST', 'LUNCH', 'DINNER'],
+};
+
+export const MEAL_NAMES = { BREAKFAST: 'Breakfast', LUNCH: 'Lunch', DINNER: 'Dinner' } as const;
+
 export const MAX_NIGHTS = 30;
 
 const HOTEL_TIME_ZONE = 'Asia/Colombo';
@@ -84,11 +94,26 @@ type QuoteInput = {
   adults: number;
   children: number;
   mealPlan: MealPlanKey;
+  // Price per guest of the dish chosen for an included meal. A meal with no priced dish costs its share of the plan.
+  dishPrices?: Partial<Record<'BREAKFAST' | 'LUNCH' | 'DINNER', number | null>>;
 };
 
-export function quoteBooking({ pricePerNight, nights, adults, children, mealPlan }: QuoteInput) {
+// What meals cost per guest per night: the plan price, with each chosen dish's own price
+// taking the place of that meal's share of the plan (e.g. Half Board 3,500 = 1,750 per meal).
+export function mealPricePerGuestNight(mealPlan: MealPlanKey, dishPrices: QuoteInput['dishPrices'] = {}) {
+  const meals = MEAL_PLAN_MEALS[mealPlan];
+  const planPrice = MEAL_PLANS[mealPlan].pricePerGuestNight;
+  if (meals.length === 0) return planPrice;
+  const share = planPrice / meals.length;
+  return meals.reduce((sum, meal) => {
+    const dishPrice = dishPrices[meal];
+    return sum + (typeof dishPrice === 'number' && dishPrice > 0 ? dishPrice : share);
+  }, 0);
+}
+
+export function quoteBooking({ pricePerNight, nights, adults, children, mealPlan, dishPrices }: QuoteInput) {
   const roomTotal = pricePerNight * nights;
-  const mealTotal = MEAL_PLANS[mealPlan].pricePerGuestNight * (adults + children) * nights;
+  const mealTotal = Math.round(mealPricePerGuestNight(mealPlan, dishPrices) * (adults + children) * nights);
   return { roomTotal, mealTotal, total: roomTotal + mealTotal };
 }
 

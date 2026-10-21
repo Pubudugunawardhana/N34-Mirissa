@@ -10,6 +10,8 @@ const FALLBACK = {
   email: 'info@n34mirissa.com',
   bookingsPausedMessage: 'Online booking is paused for a short while. Please call or message us and we will book your stay.',
   maintenanceMessage: 'We are making a few improvements to our website. Please check back soon, or contact us directly.',
+  roomServiceHours: '7:00 am – 10:00 pm',
+  roomServiceNote: 'Meals and drinks brought to your room, fresh from our kitchen.',
 };
 
 export type SocialLinks = {
@@ -50,6 +52,8 @@ export async function getSiteSettings() {
     bookingsPausedMessage: settings?.bookingsPausedMessage || FALLBACK.bookingsPausedMessage,
     maintenance: settings?.isMaintenance ?? false,
     maintenanceMessage: settings?.maintenanceMessage || FALLBACK.maintenanceMessage,
+    roomServiceHours: settings?.roomServiceHours || FALLBACK.roomServiceHours,
+    roomServiceNote: settings?.roomServiceNote || FALLBACK.roomServiceNote,
   };
 }
 
