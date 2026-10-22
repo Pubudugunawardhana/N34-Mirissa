@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import Link from 'next/link';
 import Alert from '@/components/auth/Alert';
 import FacilityIcon from '@/components/FacilityIcon';
@@ -105,6 +106,9 @@ export default async function PublicRoomsPage({ searchParams }: PageProps<'/room
 
   const covers = rooms.flatMap((room) => (room.images[0] ? [room.images[0].url] : []));
   const heroSlides = covers.length > 0 ? covers : FALLBACK_HERO_SLIDES;
+  // The help band at the bottom uses a room photo, or a beach photo until rooms have photos.
+  const bandPhoto = covers[1] ?? covers[0] ?? '/images/hero-1.jpg';
+  const phoneHref = `tel:${site.phone.replace(/[^+d]/g, '')}`;
 
   return (
     <div className="min-h-screen bg-slate-50">
@@ -255,6 +259,38 @@ export default async function PublicRoomsPage({ searchParams }: PageProps<'/room
             </div>
           </>
         )}
+
+        {/* Help choosing a room, like the special requests band on the Dining page */}
+        <section className="pt-24" data-rooms="help">
+          <div className="theme-fixed relative overflow-hidden rounded-3xl bg-ocean-900 px-6 py-14 text-center text-white sm:px-12">
+            <Image src={bandPhoto} alt="" fill sizes="(min-width: 1280px) 1216px, 100vw" className="object-cover opacity-25" />
+            <div className="relative">
+              <h2 className="font-display text-3xl font-semibold md:text-4xl">Not sure which room is right for you?</h2>
+              <p className="mx-auto mt-4 max-w-2xl font-light text-slate-200">
+                Travelling with family, celebrating a honeymoon or staying a little longer: tell us what you need and we will help you
+                choose the right room and have it ready for your arrival.
+              </p>
+              <div className="mt-8 flex flex-wrap justify-center gap-3">
+                <a href={phoneHref} className="rounded-full bg-sand-500 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-sand-600">
+                  Call {site.phone}
+                </a>
+                {site.social.whatsapp && (
+                  <a
+                    href={site.social.whatsapp}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                  >
+                    WhatsApp us
+                  </a>
+                )}
+                <Link href="/contact" className="rounded-full border border-white/30 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-white/10">
+                  Send a message
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
       </main>
 
       <SiteFooter />
