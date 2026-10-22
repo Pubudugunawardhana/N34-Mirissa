@@ -5,6 +5,9 @@
 import { randomBytes } from 'crypto';
 import { PrismaClient } from '@prisma/client';
 
+// The sample room photos, kept on the hotel's Cloudinary account.
+const SAMPLE_PHOTOS = 'https://res.cloudinary.com/s5lzrbqa/image/upload/';
+
 const prisma = new PrismaClient();
 
 const FEATURES = [
@@ -41,7 +44,7 @@ const ROOMS = [
     roomNumbers: ['101', '102', '103', '104', '105', '106'],
     maxAdults: 2,
     maxChildren: 1,
-    images: ['deluxe-1.jpg', 'deluxe-2.jpg', 'deluxe-3.jpg'],
+    images: ['v1792645554/n34-mirissa/rooms/rtvxnhphrtwnaxmczeeo.jpg', 'v1792645557/n34-mirissa/rooms/vx5ximzxkmqp3ta8xdw8.jpg', 'v1792645560/n34-mirissa/rooms/iercwqlodhbfgfl4avcj.jpg'],
     features: ['Bedroom', 'Balcony', 'Sea View', 'Work Desk'],
     facilities: ['WiFi', 'Air Conditioner', 'Television', 'Hot Water', 'Tea & Coffee', 'Safe'],
   },
@@ -55,7 +58,7 @@ const ROOMS = [
     roomNumbers: ['G01', 'G02', 'G03'],
     maxAdults: 4,
     maxChildren: 2,
-    images: ['family-1.jpg', 'family-2.jpg', 'family-3.jpg'],
+    images: ['v1792645562/n34-mirissa/rooms/ejl7vtvm7we1denl587v.jpg', 'v1792645565/n34-mirissa/rooms/dtogszrbqzrovhjn6v0i.jpg', 'v1792645567/n34-mirissa/rooms/ui9j4ch6s6i2raydgvha.jpg'],
     features: ['Bedroom', 'Sofa', 'Garden View', 'Kitchenette', 'Work Desk'],
     facilities: ['WiFi', 'Air Conditioner', 'Television', 'Hot Water', 'Mini Bar', 'Tea & Coffee', 'Room Service'],
   },
@@ -69,7 +72,7 @@ const ROOMS = [
     roomNumbers: ['V1', 'V2'],
     maxAdults: 2,
     maxChildren: 2,
-    images: ['villa-1.jpg', 'villa-2.jpg', 'villa-3.jpg'],
+    images: ['v1792645569/n34-mirissa/rooms/zy9xhjgtr1d9i5izh1wb.jpg', 'v1792645573/n34-mirissa/rooms/ziwerwboakw6cqcclr2p.jpg', 'v1792645575/n34-mirissa/rooms/y57nayfctdfu8n7h5ift.jpg'],
     features: ['Bedroom', 'Balcony', 'Sofa', 'Sea View', 'Private Pool'],
     facilities: ['WiFi', 'Air Conditioner', 'Television', 'Hot Water', 'Mini Bar', 'Tea & Coffee', 'Room Service', 'Spa', 'Safe'],
   },
@@ -292,8 +295,8 @@ async function main() {
       data: {
         ...room,
         capacity: room.maxAdults + room.maxChildren,
-        // Static files in public/images/rooms, not uploads: deleting the room leaves them in place.
-        images: { create: images.map((file, position) => ({ url: `/images/rooms/${file}`, position })) },
+        // Sample photos on the hotel's Cloudinary account. No publicId: deleting a sample room leaves the shared photo in place.
+        images: { create: images.map((file, position) => ({ url: `${SAMPLE_PHOTOS}${file}`, position })) },
         features: { create: features.map((name) => ({ featureId: featureIds.get(name) })) },
         facilities: { create: facilities.map((name) => ({ facilityId: facilityIds.get(name) })) },
       },

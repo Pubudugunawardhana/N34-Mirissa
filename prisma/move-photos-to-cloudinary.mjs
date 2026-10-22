@@ -1,6 +1,7 @@
-// One-time move of photos kept inside the project to Cloudinary: the sample room photos in
-// public/images/rooms and anything uploaded while Cloudinary was not set up (public/uploads).
-// Each photo is uploaded, then its database row points at the Cloudinary copy.
+// Moves every photo the database points at inside the project to Cloudinary: sample photos in public/images
+// (rooms, and the beach photos used as placeholders for meals, dinners and experiences) and anything uploaded
+// while Cloudinary was not set up (public/uploads). Each row gets its own Cloudinary copy, so replacing or
+// deleting one in the admin never removes a photo another row still uses.
 //
 //   npm run photos:to-cloud            move them
 //   npm run photos:to-cloud -- --dry   only list what would move
@@ -27,8 +28,8 @@ const TABLES = [
   { model: 'experience', url: 'imageUrl', publicId: 'imagePublicId', kind: 'experiences' },
 ];
 
-// Only these project folders move. Site photos such as /images/hero-1.jpg stay part of the website.
-const MOVABLE = ['/images/rooms/', '/uploads/'];
+// Links inside the project. The files in public/images stay: the website's own pages (hero, sign-in) use them too.
+const MOVABLE = ['/images/', '/uploads/'];
 
 const { CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET } = process.env;
 if (!CLOUDINARY_CLOUD_NAME || !CLOUDINARY_API_KEY || !CLOUDINARY_API_SECRET) {
