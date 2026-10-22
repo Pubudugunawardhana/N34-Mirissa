@@ -194,7 +194,19 @@ export default async function PublicRoomsPage({ searchParams }: PageProps<'/room
       </div>
 
       {/* Rooms */}
-      <main className="mx-auto max-w-7xl px-4 pb-10 pt-14 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-7xl px-4 pb-10 pt-20 sm:px-6 lg:px-8">
+        {/* Introduction */}
+        <section className="mx-auto mb-14 max-w-3xl text-center" data-rooms="intro">
+          <span className="block text-xs font-medium uppercase tracking-[0.3em] text-sand-600">Accommodation</span>
+          <h2 className="mt-3 font-display text-3xl font-semibold text-ocean-900 md:text-4xl">Serenity Awaits You</h2>
+          <span className="mx-auto mt-4 block h-0.5 w-16 rounded-full bg-sand-500" aria-hidden="true" />
+          <p className="mt-8 font-light leading-loose text-slate-600">
+            Unwind in calm, light-filled rooms just steps from Mirissa beach. Each one blends simple tropical design with modern
+            comfort, so you can rest easy, listen to the waves and let the south coast set the pace of your day. Choose the room
+            that suits your stay, from cosy rooms for two to space for the whole family.
+          </p>
+        </section>
+
         {site.bookingsPaused && (
           <div className="mb-8">
             <BookingPausedNotice site={site} />

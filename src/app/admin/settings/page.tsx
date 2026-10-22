@@ -18,6 +18,7 @@ export default async function AdminSettingsPage() {
       <SettingsForm
         values={{
           address: site.address,
+          googleMap: saved?.googleMap ?? '',
           phone: site.phone,
           email: site.email,
           whatsapp: saved?.whatsapp ?? '',

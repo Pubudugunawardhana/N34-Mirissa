@@ -7,6 +7,7 @@ import RoomCover from '@/components/rooms/RoomCover';
 import SiteFooter from '@/components/SiteFooter';
 import SiteNav from '@/components/SiteNav';
 import { parseDateOnly } from '@/lib/booking';
+import { getDiningMenu } from '@/lib/dining';
 import { getSiteSettings } from '@/lib/hotel';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
@@ -25,7 +26,7 @@ function clamp(value: string | undefined, min: number, max: number, fallback: nu
 export default async function BookPage({ searchParams }: PageProps<'/book'>) {
   // Booking does not need an account. A signed-in guest gets their saved details filled in
   // (read fresh from the database: the phone number is not part of the login session).
-  const [session, params, site] = await Promise.all([auth(), searchParams, getSiteSettings()]);
+  const [session, params, site, dining] = await Promise.all([auth(), searchParams, getSiteSettings(), getDiningMenu()]);
 
   const roomId = first(params.roomId);
   if (!roomId) redirect('/rooms');
@@ -80,6 +81,20 @@ export default async function BookPage({ searchParams }: PageProps<'/book'>) {
             image: room.images[0]?.url ?? null,
           }}
           // Offered to visitors who are not signed in; they come straight back to this booking afterwards.
+          menus={dining.map((service) => ({
+            meal: service.key,
+            title: service.title,
+            hours: service.hours,
+            isAvailable: service.isAvailable,
+            items: service.items.map((item) => ({
+              id: item.id,
+              name: item.name,
+              description: item.description,
+              price: item.price,
+              isVegetarian: item.isVegetarian,
+              isSpicy: item.isSpicy,
+            })),
+          }))}
           signInHref={user ? null : `/login?callbackUrl=${encodeURIComponent(`/book?${new URLSearchParams(Object.entries(params).flatMap(([key, value]) => (typeof value === 'string' ? [[key, value]] : [])))}`)}`}
           initial={{
             guestName: user?.name ?? '',
