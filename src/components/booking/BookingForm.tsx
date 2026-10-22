@@ -6,12 +6,15 @@ import { checkAvailability, createBooking, type AvailabilityResult, type Booking
 import Alert from '@/components/auth/Alert';
 import Field, { FieldError, inputClass } from '@/components/auth/Field';
 import SubmitButton from '@/components/auth/SubmitButton';
+import MealChoicePicker, { type BookingMenu } from '@/components/booking/MealChoicePicker';
 import RoomCover from '@/components/rooms/RoomCover';
 import SelectMenu from '@/components/SelectMenu';
 import {
   MEAL_PLANS,
   MEAL_PLAN_KEYS,
+  MEAL_PLAN_MEALS,
   addDays,
+  mealPricePerGuestNight,
   formatLKR,
   formatStayDate,
   guestSummary,
@@ -33,6 +36,8 @@ type BookingFormProps = {
   };
   // Set for visitors without a session: where "sign in" should take them.
   signInHref: string | null;
+  // The Dining menus, for choosing a dish for each meal the plan includes.
+  menus: BookingMenu[];
   initial: { guestName: string; email: string; phone: string; checkIn: string; checkOut: string; adults: number; children: number };
 };
 
@@ -65,7 +70,7 @@ function Step({ number, title, hint, children }: { number: number; title: string
   );
 }
 
-export default function BookingForm({ room, initial, signInHref }: BookingFormProps) {
+export default function BookingForm({ room, initial, signInHref, menus }: BookingFormProps) {
   const [state, formAction, isPending] = useActionState(createBooking, initialState);
 
   // Controlled, so nothing the guest typed is lost when the server sends back an error.
@@ -78,6 +83,8 @@ export default function BookingForm({ room, initial, signInHref }: BookingFormPr
   const [adults, setAdults] = useState(initial.adults);
   const [children, setChildren] = useState(initial.children);
   const [mealPlan, setMealPlan] = useState<MealPlanKey>('ROOM_ONLY');
+  // Meal -> chosen dish. Kept when the plan changes, so switching back does not lose a choice.
+  const [mealChoices, setMealChoices] = useState<Record<string, string>>({});
 
   const today = todayDateOnly();
   const stay = validateStay(checkIn, checkOut);
@@ -105,8 +112,16 @@ export default function BookingForm({ room, initial, signInHref }: BookingFormPr
   }, [room.id, stayKey, state]);
 
   const current = availability?.key === stayKey ? availability.result : null;
-  const quote = stay.ok ? quoteBooking({ pricePerNight: room.price, nights: stay.nights, adults, children, mealPlan }) : null;
   const guests = adults + children;
+  const planMenus = MEAL_PLAN_MEALS[mealPlan].flatMap((meal) => menus.filter((menu) => menu.meal === meal));
+  const chosenDishes = planMenus.flatMap((menu) => {
+    const dish = menu.items.find((item) => item.id === mealChoices[menu.meal]);
+    return dish ? [{ meal: menu.meal, title: menu.title, name: dish.name, price: dish.price }] : [];
+  });
+  // Shown only; the server works the price out again.
+  const dishPrices = Object.fromEntries(chosenDishes.map((dish) => [dish.meal, dish.price]));
+  const quote = stay.ok ? quoteBooking({ pricePerNight: room.price, nights: stay.nights, adults, children, mealPlan, dishPrices }) : null;
+  const mealRate = mealPricePerGuestNight(mealPlan, dishPrices);
 
   let blocker: string | null = null;
   if (!checkIn || !checkOut) blocker = 'Provide check-in & check-out dates.';
@@ -256,6 +271,15 @@ export default function BookingForm({ room, initial, signInHref }: BookingFormPr
             </div>
           </fieldset>
 
+          {planMenus.length > 0 && (
+            <MealChoicePicker
+              menus={planMenus}
+              planLabel={MEAL_PLANS[mealPlan].label}
+              choices={mealChoices}
+              onChange={(meal, dishId) => setMealChoices((current) => ({ ...current, [meal]: dishId }))}
+            />
+          )}
+
           <div className="mt-6">
             <label htmlFor="specialRequests" className={labelClass}>
               Special requests <span className="font-normal text-slate-400">(optional)</span>
@@ -305,6 +329,14 @@ export default function BookingForm({ room, initial, signInHref }: BookingFormPr
               <dt className="text-slate-500">Meals</dt>
               <dd className="font-medium text-slate-800">{MEAL_PLANS[mealPlan].label}</dd>
             </div>
+            {chosenDishes.map((dish) => (
+              <div key={dish.meal} className="-mt-1.5 flex min-w-0 justify-end text-xs" data-summary-dish={dish.name}>
+                <dt className="sr-only">{dish.title}</dt>
+                <dd className="truncate text-slate-500">
+                  {dish.title} · {dish.name}
+                </dd>
+              </div>
+            ))}
           </dl>
 
           <div className="mt-5 border-t border-slate-100 pt-5 text-sm" aria-live="polite">
@@ -312,11 +344,18 @@ export default function BookingForm({ room, initial, signInHref }: BookingFormPr
               <dl className="space-y-2.5">
                 <div className="flex justify-between gap-4 text-slate-600">
                   <dt>{formatLKR(room.price)} × {stay.nights} {stay.nights === 1 ? 'night' : 'nights'}</dt>
-                  <dd>{formatLKR(quote.roomTotal)}</dd>
+                  <dd className="shrink-0 whitespace-nowrap">{formatLKR(quote.roomTotal)}</dd>
                 </div>
+                {/* One line: a short rate on the left (full wording on hover), the amount never wraps. */}
                 <div className="flex justify-between gap-4 text-slate-600">
-                  <dt>{MEAL_PLANS[mealPlan].label} × {guests} {guests === 1 ? 'guest' : 'guests'}</dt>
-                  <dd>{formatLKR(quote.mealTotal)}</dd>
+                  <dt
+                    className="min-w-0 truncate"
+                    title={mealRate > 0 ? `${formatLKR(mealRate)} × ${guests} ${guests === 1 ? 'guest' : 'guests'} × ${stay.nights} ${stay.nights === 1 ? 'night' : 'nights'}` : undefined}
+                  >
+                    {MEAL_PLANS[mealPlan].label}
+                    {mealRate > 0 && ` · ${Math.round(mealRate).toLocaleString('en-US')} × ${guests} × ${stay.nights}`}
+                  </dt>
+                  <dd className="shrink-0 whitespace-nowrap">{formatLKR(quote.mealTotal)}</dd>
                 </div>
                 <div className="flex items-baseline justify-between gap-4 border-t border-slate-100 pt-4">
                   <dt className="text-base font-semibold text-ocean-900">Total</dt>

@@ -2,9 +2,11 @@
 
 import { useActionState, useState } from 'react';
 import { updateSettings, type SettingsFormState } from '@/app/actions/settings';
+import { mapSearchUrl } from '@/lib/map';
 
 type SettingsValues = {
   address: string;
+  googleMap: string;
   phone: string;
   email: string;
   whatsapp: string;
@@ -231,6 +233,33 @@ export default function SettingsForm({ values }: { values: SettingsValues }) {
               className="block w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-slate-900 outline-none transition-colors focus:border-ocean-500 focus:ring-2 focus:ring-ocean-500/20"
             />
             <FieldError state={state} name="address" />
+          </div>
+          <div>
+            <label className={labelClass} htmlFor="googleMap">Map location</label>
+            <input
+              id="googleMap"
+              name="googleMap"
+              defaultValue={values.googleMap}
+              placeholder="5.9483, 80.4716"
+              className={fieldClass}
+            />
+            <p className="mt-1.5 text-xs text-slate-500">
+              Paste the hotel&apos;s coordinates or a Google Maps link. Leave empty to use the address.
+              {values.googleMap && (
+                <>
+                  {' '}
+                  <a
+                    href={mapSearchUrl(values.googleMap)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-medium text-ocean-600 hover:underline"
+                  >
+                    Preview on Google Maps ↗
+                  </a>
+                </>
+              )}
+            </p>
+            <FieldError state={state} name="googleMap" />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
