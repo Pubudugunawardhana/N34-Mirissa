@@ -5,7 +5,7 @@ import ContactForm from '@/components/contact/ContactForm';
 import SiteFooter from '@/components/SiteFooter';
 import SiteNav from '@/components/SiteNav';
 import { getHotelContact } from '@/lib/hotel';
-import { NEARBY, directionsUrl, distanceKm, formatDistance, mapEmbedUrl, mapSearchUrl } from '@/lib/map';
+import { directionsUrl, mapEmbedUrl, mapSearchUrl, nearbyPlaces } from '@/lib/map';
 import prisma from '@/lib/prisma';
 import SocialIcons, { hasSocialLinks } from '@/components/SocialIcons';
 
@@ -50,8 +50,7 @@ export default async function ContactPage() {
   // A signed-in guest does not have to type their own details again.
   const user = session?.user ? await prisma.user.findUnique({ where: { id: session.user.id } }) : null;
   const hasSocial = hasSocialLinks(contact.social);
-  const pin = contact.mapPin;
-  const nearby = pin ? NEARBY.map((place) => ({ ...place, distance: formatDistance(distanceKm(pin, place)) })) : [];
+  const nearby = nearbyPlaces(contact.mapPin);
 
   return (
     <div className="min-h-screen bg-slate-50">

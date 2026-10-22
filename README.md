@@ -149,6 +149,7 @@ CLOUDINARY_API_SECRET=""
 | `npm start` | Run the production build. |
 | `npm run lint` | Run ESLint. |
 | `npm run seed` | Add sample content (`prisma/seed.mjs`). Safe to run more than once. |
+| `npm run photos:to-cloud` | Move photos stored in the project (`public/images/rooms`, `public/uploads`) to Cloudinary and update the database links. Add `-- --dry` to only list them. |
 | `npx prisma db push` | Apply changes in `prisma/schema.prisma` to the database. |
 | `npx prisma studio` | Browse the database in your browser. |
 | `npx tsc --noEmit` | Type-check the project. |

@@ -52,6 +52,18 @@ export const NEARBY = [
   { name: 'Bandaranaike Airport', lat: 7.1808, lng: 79.8841, note: 'about 3 h by car' },
 ];
 
+// Centre of Mirissa town: close enough to measure the far places from while no pin is saved.
+const MIRISSA_CENTRE: MapPin = { lat: 5.9483, lng: 80.4716 };
+
+// The Nearby list. With the hotel's pin every distance is measured from it; without one, far places are measured
+// from the town centre and places inside Mirissa just say so, since a guess there could be off by a lot.
+export function nearbyPlaces(pin: MapPin | null) {
+  return NEARBY.map((place) => ({
+    ...place,
+    distance: pin ? formatDistance(distanceKm(pin, place)) : place.note ? formatDistance(distanceKm(MIRISSA_CENTRE, place)) : 'In Mirissa',
+  }));
+}
+
 // Straight-line distance between two points (haversine).
 export function distanceKm(a: MapPin, b: MapPin) {
   const radians = (degrees: number) => (degrees * Math.PI) / 180;
