@@ -1,26 +1,197 @@
 @import "tailwindcss";
 
+@theme {
+  --color-ocean-900: #0f172a;
+  --color-ocean-800: #1e3a8a;
+  --color-ocean-700: #1d4ed8;
+  --color-ocean-600: #2563eb;
+  --color-ocean-500: #3b82f6;
+  --color-ocean-400: #38bdf8;
+  --color-ocean-100: #dbeafe;
+  --color-ocean-50: #eff6ff;
+  --color-sand-600: #d97706;
+  --color-sand-500: #f59e0b;
+  --color-sand-200: #fde68a;
+  --color-sand-50: #fffbeb;
+  
+  --font-sans: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  /* Headings use the same family as the body; change this line to give them a font of their own. */
+  --font-display: var(--font-poppins), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace;
+}
+
 :root {
   --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --foreground: #0f172a;
 }
 
 body {
-  background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--background);
+  font-family: var(--font-sans);
+}
+
+/* ==========================================================================
+   Dark mode
+   Switched by data-theme="dark" on <html> (see ThemeToggle and the script in layout.tsx).
+   Components are written with light-mode classes only; this layer restyles those
+   classes in dark mode. Brand colours (ocean-600 / sand-500 buttons, white button
+   text) are left alone so buttons look the same in both modes.
+
+   Sections that are always dark (photo heroes, footer, admin sidebar) carry the
+   class "theme-fixed" and are skipped, so they look identical in both modes.
+
+   Everything is wrapped in :where() to keep specificity at one class, so hover:
+   and focus: variants on the same element still win.
+   ========================================================================== */
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --background: #0b1220;
+  --foreground: #e2e8f0;
+}
+
+@layer utilities {
+  :where([data-theme="dark"]) :where(:not(.theme-fixed, .theme-fixed *)) {
+    /* Surfaces */
+    &.bg-white { background-color: #131c2e; }
+    &.bg-white\/95 { background-color: rgb(19 28 46 / 0.95); }
+    &.bg-white\/90 { background-color: rgb(19 28 46 / 0.9); }
+    &.bg-white\/85 { background-color: rgb(19 28 46 / 0.85); }
+    &.bg-slate-50 { background-color: #0b1220; }
+    &.bg-slate-50\/60 { background-color: rgb(11 18 32 / 0.6); }
+    &.bg-slate-100 { background-color: #1a2438; }
+    &.bg-slate-200 { background-color: #243049; }
+    &.bg-slate-300 { background-color: #334155; }
+    &.bg-ocean-50 { background-color: #16233f; }
+    &.bg-ocean-100 { background-color: #1c2e52; }
+    &.bg-sand-50 { background-color: #2a2112; }
+    &.bg-sand-200\/60 { background-color: rgb(245 158 11 / 0.12); }
+
+    /* Status tints */
+    &.bg-emerald-50, &.bg-green-50 { background-color: #0f2a22; }
+    &.bg-amber-50 { background-color: #2b2110; }
+    &.bg-red-50 { background-color: #2d1518; }
+
+    /* Text */
+    &.text-slate-900 { color: #f1f5f9; }
+    &.text-slate-800 { color: #e7ecf3; }
+    &.text-slate-700 { color: #cbd5e1; }
+    &.text-slate-600 { color: #aab6c7; }
+    &.text-slate-500 { color: #8c9bb0; }
+    &.text-slate-400 { color: #7b8aa1; }
+    &.text-ocean-900 { color: #e6edf9; }
+    &.text-ocean-800 { color: #bcd0f5; }
+    &.text-ocean-700 { color: #93b4f5; }
+    &.text-ocean-600 { color: #7aa5f7; }
+    &.text-sand-600 { color: #f59e0b; }
+    &.text-emerald-600, &.text-emerald-700, &.text-emerald-800,
+    &.text-green-600, &.text-green-700, &.text-green-800 { color: #6ee7b7; }
+    &.text-amber-600, &.text-amber-700 { color: #fbbf24; }
+    &.text-red-500, &.text-red-600, &.text-red-700, &.text-red-800 { color: #fca5a5; }
+
+    /* Lines */
+    &.border-slate-100 { border-color: #1e293b; }
+    &.border-slate-200 { border-color: #2a374d; }
+    &.border-slate-200\/70 { border-color: rgb(42 55 77 / 0.7); }
+    &.border-slate-300 { border-color: #3a4a63; }
+    &.border-ocean-100 { border-color: #24365c; }
+    &.border-ocean-900 { border-color: #e6edf9; }
+    &.border-emerald-200, &.border-green-200 { border-color: #1f5a47; }
+    &.border-sand-200 { border-color: rgb(245 158 11 / 0.3); }
+    &.border-red-200 { border-color: #6b2a30; }
+    &.divide-slate-100 > :not(:last-child) { border-color: #1e293b; }
+    &.divide-sand-200 > :not(:last-child) { border-color: rgb(245 158 11 / 0.25); }
+    &.ring-slate-200 { --tw-ring-color: #2a374d; }
+    &.ring-ocean-100 { --tw-ring-color: #24365c; }
+    &.ring-sand-200, &.ring-sand-200\/70 { --tw-ring-color: rgb(245 158 11 / 0.25); }
+    &.ring-emerald-200 { --tw-ring-color: #1f5a47; }
+    &.ring-amber-200 { --tw-ring-color: #6b4e16; }
+    &.ring-red-200 { --tw-ring-color: #6b2a30; }
+
+    /* Hover and focus surfaces */
+    &.hover\:bg-white:hover, &.focus\:bg-white:focus { background-color: #131c2e; }
+    &.hover\:bg-white\/80:hover { background-color: rgb(19 28 46 / 0.8); }
+    &.hover\:bg-slate-50:hover { background-color: #17213a; }
+    &.hover\:bg-slate-50\/50:hover { background-color: rgb(23 33 58 / 0.5); }
+    &.hover\:bg-slate-100:hover { background-color: #1f2b44; }
+    &.hover\:bg-slate-200:hover { background-color: #2a374d; }
+    &.hover\:bg-ocean-50:hover { background-color: #1c2e52; }
+    &.hover\:bg-red-50:hover { background-color: #3a1a1e; }
+    &.hover\:bg-emerald-100:hover { background-color: #133529; }
+    &.hover\:border-slate-300:hover { border-color: #4a5c78; }
+    &.hover\:text-ocean-600:hover, &.hover\:text-ocean-700:hover,
+    &.hover\:text-ocean-800:hover, &.hover\:text-ocean-900:hover,
+    &.group-hover\:text-ocean-600:is(:where(.group):hover *) { color: #a9c4fa; }
+    &.hover\:text-slate-700:hover { color: #e7ecf3; }
+    &.hover\:text-red-600:hover, &.hover\:text-red-700:hover, &.hover\:text-red-800:hover { color: #fecaca; }
+    &.hover\:text-emerald-800:hover { color: #a7f3d0; }
+  }
+
+  /* The sign-in form panel is white only on large screens. */
+  @media (min-width: 64rem) {
+    :where([data-theme="dark"]) :where(:not(.theme-fixed, .theme-fixed *)).lg\:bg-white { background-color: #131c2e; }
+  }
+}
+
+/* Top-of-screen loading bar (NavigationProgress): moves quickly at first, then slows, never quite finishing on its own. */
+@keyframes nav-progress {
+  0% { transform: scaleX(0); }
+  20% { transform: scaleX(0.4); }
+  100% { transform: scaleX(0.9); }
+}
+
+.nav-progress {
+  animation: nav-progress 8s cubic-bezier(0.1, 0.7, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-progress { animation: none; transform: scaleX(0.6); }
+}
+
+/* Rooms page: features and facilities sliding sideways on their own. The track holds the list twice,
+   so moving it by half its width loops without a jump. Hovering the strip pauses it. */
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.marquee-track {
+  animation: marquee 60s linear infinite;
+}
+.marquee-reverse {
+  animation-direction: reverse;
+}
+.marquee-group:hover .marquee-track {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    width: auto;
+  }
+}
+
+/* Home page: sections fade and lift in as they scroll into view (see Reveal). */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.reveal.is-visible {
+  opacity: 1;
+  transform: none;
+}
+/* The small bouncing cue at the bottom of the home hero. */
+@keyframes scroll-cue {
+  0%, 100% { transform: translateY(0); opacity: 1; }
+  50% { transform: translateY(8px); opacity: 0.4; }
+}
+.scroll-cue {
+  animation: scroll-cue 2s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .reveal { opacity: 1; transform: none; transition: none; }
+  .scroll-cue { animation: none; }
 }

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Browser tab icon: "N34" on the site's dark ocean blue, the number in sand. -->
+  <rect width="64" height="64" rx="14" fill="#0f172a"/>
+  <text x="32" y="42" text-anchor="middle" textLength="54" lengthAdjust="spacingAndGlyphs"
+        font-family="Poppins, 'Segoe UI', Arial, sans-serif" font-size="27" font-weight="800">
+    <tspan fill="#ffffff">N</tspan><tspan fill="#f59e0b">34</tspan>
+  </text>
+  <rect x="14" y="49" width="36" height="3" rx="1.5" fill="#f59e0b" opacity="0.9"/>
+</svg>

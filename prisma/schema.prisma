@@ -1,0 +1,406 @@
+generator client {
+  provider        = "prisma-client-js"
+  // Loads related rows (photos, features…) in the same query instead of one query per relation:
+  // with a database this far away every extra round trip costs about a third of a second.
+  previewFeatures = ["relationJoins"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// USER & AUTHENTICATION
+// ==========================================
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  pendingEmail  String?   // a new address waiting for its verification link to be opened
+  password      String?
+  phone         String?
+  image         String?   // profile photo
+  imagePublicId String?   // Cloudinary id of that photo, needed to delete it
+  role          Role      @default(CUSTOMER)
+  status        Status    @default(ACTIVE)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  bookings      Booking[]
+  reviews       Review[]
+  authTokens    AuthToken[]
+}
+
+// One-time links for email verification and password reset.
+// Only the SHA-256 hash is stored; the raw token lives in the emailed link.
+model AuthToken {
+  id        String        @id @default(cuid())
+  userId    String
+  type      AuthTokenType
+  tokenHash String        @unique
+  expiresAt DateTime
+  createdAt DateTime      @default(now())
+
+  user      User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, type])
+}
+
+enum AuthTokenType {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum Role {
+  ADMIN
+  CUSTOMER
+  GUEST
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+}
+
+// ==========================================
+// ROOMS & FACILITIES
+// ==========================================
+model Room {
+  id          String   @id @default(cuid())
+  name        String
+  area        Int
+  capacity    Int
+  price       Float
+  quantity    Int
+  roomNumbers String[] @default([]) // the hotel's own numbers for the units of this type, e.g. ["101", "102"]
+  description String?
+  maxAdults   Int      @default(2)
+  maxChildren Int      @default(0)
+  isActive    Boolean  @default(true) // false hides the room from guests
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  images      RoomImage[]
+  bookings    Booking[]
+  features    RoomFeature[]
+  facilities  RoomFacility[]
+}
+
+model RoomImage {
+  id        String   @id @default(cuid())
+  url       String
+  publicId  String?  // Cloudinary id, needed to delete the file
+  position  Int      @default(0) // lowest is the cover photo
+  roomId    String
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+}
+
+model Feature {
+  id          String        @id @default(cuid())
+  icon        String?
+  name        String
+  description String?
+  rooms       RoomFeature[]
+}
+
+model RoomFeature {
+  roomId    String
+  featureId String
+  room      Room    @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  feature   Feature @relation(fields: [featureId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, featureId])
+}
+
+model Facility {
+  id          String         @id @default(cuid())
+  icon        String?
+  name        String
+  description String?
+  rooms       RoomFacility[]
+}
+
+model RoomFacility {
+  roomId     String
+  facilityId String
+  room       Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  facility   Facility @relation(fields: [facilityId], references: [id], onDelete: Cascade)
+
+  @@id([roomId, facilityId])
+}
+
+// ==========================================
+// BOOKINGS & PAYMENTS
+// ==========================================
+model Booking {
+  id            String        @id @default(cuid())
+  userId        String?       // empty for a booking made without an account
+  roomNumber    String?       // the actual room the hotel assigned, e.g. "204"
+  guestToken    String?       // secret that lets a guest without an account open and cancel the booking
+  roomId        String
+  checkIn       DateTime
+  checkOut      DateTime
+  totalAmount   Float
+  reference     String        @unique @default(cuid())
+  guestName     String        @default("")
+  email         String        @default("") // where the confirmation is sent; may differ from the account email
+  phone         String        @default("")
+  idNumber      String?       // NIC or passport number, recorded at the desk for walk-in guests
+  source        BookingSource @default(ONLINE)
+  address       String        @default("")
+  adults        Int           @default(1)
+  children      Int           @default(0)
+  mealPlan      MealPlan      @default(ROOM_ONLY)
+  specialRequests String?
+  pricePerNight Float         @default(0) // room price when the booking was made
+  mealTotal     Float         @default(0)
+  extrasTotal   Float         @default(0) // sum of the extra charges added by the hotel
+  amountPaid    Float         @default(0) // what the guest has paid so far; the balance is totalAmount - amountPaid
+  paymentStatus PaymentStatus @default(PENDING)
+  bookingStatus BookingStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  user          User?         @relation(fields: [userId], references: [id])
+  room          Room          @relation(fields: [roomId], references: [id])
+  charges       BookingCharge[]
+  mealChoices   BookingMealChoice[]
+
+  @@index([roomId, checkIn, checkOut])
+}
+
+// Something the hotel added to the bill during the stay, e.g. an airport transfer or laundry.
+model BookingCharge {
+  id          String   @id @default(cuid())
+  bookingId   String
+  description String
+  quantity    Int      @default(1)
+  unitPrice   Float
+  createdAt   DateTime @default(now())
+
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+}
+
+// Where the booking was made: on the website, or at the hotel desk by staff.
+enum BookingSource {
+  ONLINE
+  WALK_IN
+}
+
+enum MealPlan {
+  ROOM_ONLY
+  BED_AND_BREAKFAST
+  HALF_BOARD
+  FULL_BOARD
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  REFUNDED
+}
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+// ==========================================
+// REVIEWS & CONTACT
+// ==========================================
+model Review {
+  id        String   @id @default(cuid())
+  rating    Int
+  content   String
+  userId    String
+  roomId    String
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model ContactMessage {
+  id         String    @id @default(cuid())
+  name       String
+  email      String
+  phone      String?
+  subject    String?
+  message    String
+  isRead     Boolean   @default(false)
+  reply      String?   // the answer the hotel emailed back from the admin panel
+  repliedAt  DateTime?
+  archivedAt DateTime? // archived messages leave the inbox but are kept
+  createdAt  DateTime  @default(now())
+}
+
+// ==========================================
+// HOTEL MANAGEMENT (Experiences, Dining, Weddings)
+// ==========================================
+enum ExperienceCategory {
+  OCEAN
+  CULTURE
+  ADVENTURE
+  WELLNESS
+}
+
+// Something to do in and around Mirissa that guests can ask the hotel to arrange.
+model Experience {
+  id            String             @id @default(cuid())
+  title         String
+  category      ExperienceCategory @default(OCEAN)
+  description   String
+  highlights    String[]           // short points shown as a list
+  price         Float?             // empty: not offered for request yet (no price, no Request button)
+  priceUnit     PriceUnit          @default(PER_PERSON)
+  duration      String?
+  bestTime      String?            // e.g. "6:30 am departure"
+  imageUrl      String?
+  imagePublicId String?
+  isActive      Boolean            @default(true)
+  position      Int                @default(0)
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+}
+
+// The hotel's three meals; the public Dining page shows each with its menu.
+enum MealTime {
+  BREAKFAST
+  LUNCH
+  DINNER
+}
+
+model MealService {
+  id            String     @id @default(cuid())
+  key           MealTime   @unique
+  title         String
+  tagline       String?
+  hours         String     // shown as written, e.g. "7:00 – 10:30 am"
+  description   String
+  imageUrl      String?
+  imagePublicId String?    // Cloudinary id, needed to delete the photo
+  isAvailable   Boolean    @default(true)
+  updatedAt     DateTime   @updatedAt
+
+  items         MenuItem[]
+}
+
+model MenuItem {
+  id           String      @id @default(cuid())
+  serviceId    String
+  name         String
+  description  String?
+  price        Float?      // empty: included / no separate price
+  isVegetarian Boolean     @default(false)
+  isSpicy      Boolean     @default(false)
+  position     Int         @default(0)
+
+  service      MealService @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  chosenIn     BookingMealChoice[]
+
+  @@index([serviceId, position])
+}
+
+// The dish a guest picked for a meal their plan includes (no row: the chef chooses).
+model BookingMealChoice {
+  id         String    @id @default(cuid())
+  bookingId  String
+  meal       MealTime
+  menuItemId String?
+  dishName   String    // kept as chosen, even if the dish is renamed or removed later
+  price      Float?    // the dish price per guest when chosen; it replaces that meal's share of the plan
+
+  booking    Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  menuItem   MenuItem? @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
+
+  @@unique([bookingId, meal])
+}
+
+enum PriceUnit {
+  PER_PERSON
+  PER_COUPLE
+  PER_GROUP
+}
+
+// A special dinner or food experience guests can ask for, e.g. a candlelit beach dinner.
+model DiningExperience {
+  id            String    @id @default(cuid())
+  title         String
+  description   String
+  price         Float
+  priceUnit     PriceUnit @default(PER_PERSON)
+  duration      String?   // shown as written, e.g. "About 2 hours"
+  imageUrl      String?
+  imagePublicId String?
+  isActive      Boolean   @default(true)
+  position      Int       @default(0)
+  createdAt     DateTime  @default(now())
+}
+
+// Photos for the gallery on the Dining page.
+model DiningPhoto {
+  id        String   @id @default(cuid())
+  url       String
+  publicId  String?
+  caption   String?
+  position  Int      @default(0)
+  createdAt DateTime @default(now())
+}
+
+model WeddingPackage {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  venueDetails String?
+  diningOptions String?
+  features    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// ==========================================
+// INVENTORY
+// ==========================================
+model Equipment {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  name      String
+  quantity  Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==========================================
+// SETTINGS
+// ==========================================
+model Setting {
+  id          String   @id @default("1")
+  siteTitle   String   @default("N34 Mirissa")
+  aboutUs     String?
+  contactTitle String?
+  googleMap   String?
+  phone       String?
+  email       String?
+  facebookUrl String?
+  instagramUrl String?
+  tiktokUrl   String?
+  youtubeUrl  String?
+  tripadvisorUrl String?
+  whatsapp    String? // a phone number; the site links it to WhatsApp
+  address     String?
+  // Guests can browse but not book online (walk-ins at the desk still work).
+  bookingsPaused        Boolean @default(false)
+  bookingsPausedMessage String?
+  // The public site shows a maintenance page; admins can still use it.
+  isMaintenance Boolean @default(false)
+  maintenanceMessage String?
+  roomServiceHours   String?
+  roomServiceNote    String?
+  updatedAt   DateTime @updatedAt
+}
