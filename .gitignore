@@ -48,3 +48,7 @@ next-env.d.ts
 
 # admin-uploaded room photos (local fallback when Cloudinary is not configured)
 /public/uploads/
+
+# AI assistant instructions (kept locally, not in the repository)
+/CLAUDE.md
+/AGENTS.md
