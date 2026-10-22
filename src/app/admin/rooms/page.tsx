@@ -37,9 +37,14 @@ export default async function AdminRoomsPage({ searchParams }: PageProps<'/admin
           <h1 className="text-2xl font-bold text-slate-800">Rooms Management</h1>
           <p className="text-sm text-slate-500 mt-1">Manage all available rooms, pricing, and inventory.</p>
         </div>
-        <Link href="/admin/rooms/new" className="bg-ocean-600 hover:bg-ocean-700 text-white px-5 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-sm shadow-ocean-600/20">
-          + Add New Room
-        </Link>
+        <div className="flex flex-wrap items-center gap-4">
+          <Link href="/rooms" target="_blank" className="text-sm font-medium text-ocean-600 hover:text-ocean-800">
+            View Rooms page ↗
+          </Link>
+          <Link href="/admin/rooms/new" className="bg-ocean-600 hover:bg-ocean-700 text-white px-5 py-2.5 rounded-lg font-medium text-sm transition-colors shadow-sm shadow-ocean-600/20">
+            + Add New Room
+          </Link>
+        </div>
       </div>
 
       {notice && <Alert variant={notice.variant}>{notice.text}</Alert>}

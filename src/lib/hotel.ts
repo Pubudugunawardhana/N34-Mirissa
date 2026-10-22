@@ -1,3 +1,4 @@
+import { parseMapLocation, pinText } from '@/lib/map';
 import prisma from '@/lib/prisma';
 
 // The one row Site Settings saves to.
@@ -42,8 +43,15 @@ export async function getSiteSettings() {
   if (settings?.tripadvisorUrl) social.tripadvisor = settings.tripadvisorUrl;
   if (settings?.whatsapp) social.whatsapp = whatsappLink(settings.whatsapp);
 
+  const address = settings?.address || FALLBACK.address;
+  const mapPin = parseMapLocation(settings?.googleMap);
+
   return {
-    address: settings?.address || FALLBACK.address,
+    aboutUs: settings?.aboutUs || null,
+    address,
+    // The pin from Site Settings; the map falls back to searching the address.
+    mapPin,
+    mapQuery: mapPin ? pinText(mapPin) : address,
     phone: settings?.phone || FALLBACK.phone,
     email: settings?.email || FALLBACK.email,
     whatsapp: settings?.whatsapp || null,
@@ -61,6 +69,6 @@ export type SiteSettings = Awaited<ReturnType<typeof getSiteSettings>>;
 
 // The hotel's public contact details (receipt, emails, contact page).
 export async function getHotelContact() {
-  const { address, phone, email, social } = await getSiteSettings();
-  return { address, phone, email, social };
+  const { address, phone, email, social, mapPin, mapQuery } = await getSiteSettings();
+  return { address, phone, email, social, mapPin, mapQuery };
 }
