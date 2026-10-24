@@ -108,7 +108,19 @@ export default async function SiteFooter() {
           </div>
 
           <div className="flex flex-col items-center justify-between gap-3 border-t border-white/10 py-6 text-xs text-slate-400 sm:flex-row">
-            <p>© {new Date().getFullYear()} N34 Mirissa. All rights reserved.</p>
+            <p className="text-center sm:text-left">
+              © {new Date().getFullYear()} N34 Mirissa. All rights reserved.
+              <span className="mx-2 text-slate-600" aria-hidden="true">·</span>
+              Designed &amp; developed by{' '}
+              <a
+                href="https://github.com/Pubudugunawardhana"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-medium text-sand-200 transition-colors hover:text-white"
+              >
+                Pubudu Gunawardhana
+              </a>
+            </p>
             <div className="flex items-center gap-5">
               {/* Staff shortcut, kept dim on purpose. The admin panel itself is protected by the role check. */}
               <Link
