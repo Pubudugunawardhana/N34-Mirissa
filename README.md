@@ -1,130 +1,109 @@
-# N34 Mirissa
+<div align="center">
 
-The website and booking system for **N34 Mirissa**, a boutique beach hotel in Mirissa, Sri Lanka. Guests use it to browse rooms, book a stay, choose their meals and request experiences. Hotel staff use the admin panel for bookings, rooms, dining, messages and site settings.
+<img src="public/images/hero-1.jpg" alt="Mirissa beach" width="100%" />
 
-Built with **Next.js 16** (App Router), **React 19**, **Prisma** on **PostgreSQL**, **NextAuth v5** and **Tailwind CSS v4**.
+# 🌊 N34 Mirissa
 
----
+### *Where the Ocean Meets Calm*
 
-## Contents
+The website, booking system and staff admin panel for **N34 Mirissa**, a boutique beach hotel on the south coast of Sri Lanka.
 
-- [Features](#features)
-- [Tech stack](#tech-stack)
-- [Getting started](#getting-started)
-- [Environment variables](#environment-variables)
-- [Scripts](#scripts)
-- [Project structure](#project-structure)
-- [How things work](#how-things-work)
-- [Deployment](#deployment)
+[![Next.js](https://img.shields.io/badge/Next.js-16-000000?style=for-the-badge&logo=nextdotjs&logoColor=white)](https://nextjs.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black)](https://react.dev)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-v4-38BDF8?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Prisma](https://img.shields.io/badge/Prisma-5-2D3748?style=for-the-badge&logo=prisma&logoColor=white)](https://www.prisma.io)
+[![PostgreSQL](https://img.shields.io/badge/Neon-Postgres-00E599?style=for-the-badge&logo=postgresql&logoColor=white)](https://neon.tech)
+[![Cloudinary](https://img.shields.io/badge/Cloudinary-photos-3448C5?style=for-the-badge&logo=cloudinary&logoColor=white)](https://cloudinary.com)
 
----
+[✨ Features](#-what-it-does) · [🚀 Quick start](#-quick-start) · [🔐 Environment](#-environment-variables) · [🧭 How it works](#-how-it-works) · [☁️ Deploy](#%EF%B8%8F-deployment)
 
-## Features
-
-### For guests
-
-| Page | What it does |
-| --- | --- |
-| **Home** (`/`) | A full-screen photo hero with a date search bar. Below it: featured rooms, the dining band, experiences, facilities, a gallery, an FAQ and a closing booking call to action. |
-| **Rooms** (`/rooms`) | Rooms filtered by dates, guests and facilities, with live availability ("2 rooms left"). |
-| **Room details** (`/rooms/[id]`) | Photos, facilities and prices for one room. |
-| **Booking** (`/book`) | Dates, guests and a meal plan, with one dish per included meal picked from the menu. Shows a live price quote. |
-| **Confirmation and lookup** (`/book/confirmation/[id]`, `/book/find`) | A booking summary, and a way to find a booking by reference and email. |
-| **Dining** (`/dining`) | Breakfast, lunch and dinner menus in sliders, room service, special dinners with a request form, and a photo gallery. |
-| **Experiences** (`/experiences`) | Whale watching, surfing, tours and more. Filter by category, then send a request for a date. |
-| **Contact** (`/contact`) | Contact details, a Google map with directions and nearby places, and a message form. |
-| **Account** (`/user`) | The guest's own bookings and profile. Sign-up has optional email verification. |
-
-### For staff (admin panel, `/admin`)
-
-| Section | What it does |
-| --- | --- |
-| **Dashboard** | Today at a glance and the most recent bookings. |
-| **New bookings** | Confirm or cancel requests, and assign a room number. The room list shows which numbers are free. |
-| **Booking records** | Upcoming, past and cancelled stays. Mark a booking paid (the guest gets a "Payment received" email). Update rooms, meals and extra charges, and print a receipt. |
-| **Walk-in booking** | Book a guest at the front desk. |
-| **Room availability** | Every room number, free or booked, for any date. |
-| **Rooms management** | Rooms, prices, photos, room numbers, features and facilities. |
-| **Dining** | Meal times, menus and dish prices, room service, special dinners and the gallery. |
-| **Experiences** | Add, edit, reorder and hide experiences. The price is optional; without one, guests see no Request button. |
-| **Messages** | The Contact form, dining requests and experience requests in one inbox. Replies go out by email. |
-| **Site settings** | Contact details and social links, the map location, pausing online booking, and maintenance mode. |
+</div>
 
 ---
 
-## Tech stack
+## ✨ What it does
 
-| Area | Choice |
-| --- | --- |
-| Framework | Next.js 16 (App Router, Server Components, Server Actions, Turbopack) |
-| UI | React 19, Tailwind CSS v4, Poppins font |
-| Database | PostgreSQL (e.g. Neon) via Prisma 5 |
-| Auth | NextAuth v5 (credentials), bcrypt password hashes |
-| Validation | Zod 4 |
-| Email | Nodemailer with Gmail (logged to the console when not configured) |
-| Images | Cloudinary, or local files in `public/uploads` when not configured |
+<table>
+<tr>
+<td width="50%" valign="top">
 
-> **Note:** This Next.js version has breaking changes from older releases. Before changing framework-level code, read the guides in `node_modules/next/dist/docs/` (see `AGENTS.md`).
+### 🏝️ For guests
+
+- 🛏️ **Rooms:** filter by dates, guests and facilities, with live availability ("2 rooms left")
+- 📅 **Online booking:** pick a meal plan and choose your dish for each meal, with a live price quote
+- 🔎 **Find my booking:** look up a booking by reference and email
+- 🍛 **Dining:** breakfast, lunch and dinner menus, room service, special dinners and a gallery
+- 🐋 **Experiences:** whale watching, surf, tours and more, requested for a date
+- 📍 **Contact:** a Google map, **Get directions**, and nearby places with distances
+- 👤 **Accounts:** sign-up, email verification, password reset and a profile photo
+- 🌙 **Dark mode**, and a layout that works on phones
+
+</td>
+<td width="50%" valign="top">
+
+### 🧑‍💼 For staff (`/admin`)
+
+- 📥 **New bookings:** confirm a booking and assign a free room number
+- 📚 **Booking records:** Upcoming / Past stays / Cancelled
+- 💳 **Mark paid:** asks first, emails a receipt, then opens it to print
+- ➕ **Update booking:** change the room or meals, or add extras to the bill
+- 🚶 **Walk-in booking:** book a guest at the front desk
+- 🗓️ **Room availability:** every room number, free or booked
+- 🍽️ **Content:** rooms, dining and experiences, with photo uploads
+- ✉️ **Messages:** one inbox for contact and request forms, with email replies
+- ⚙️ **Site settings:** contacts, social links, map pin, **pause booking**, **maintenance mode**
+
+</td>
+</tr>
+</table>
 
 ---
 
-## Getting started
+## 🚀 Quick start
 
-### Requirements
-
-- Node.js 20 or newer
-- A PostgreSQL database (a free [Neon](https://neon.tech) database works well)
-
-### Setup
+> **You need** Node.js 20+ and a PostgreSQL database. A free [Neon](https://neon.tech) database works great.
 
 ```bash
-# 1. Install dependencies
-npm install
-
-# 2. Create your environment file (see the next section) and fill it in
-#    .env
-
-# 3. Create the database tables
-npx prisma db push
-
-# 4. Add sample content: room numbers, menus, experiences and messages (safe to run more than once)
-npm run seed
-
-# 5. Start the dev server
-npm run dev
+npm install            # 1. install dependencies
+# 2. create .env (see "Environment variables" below)
+npx prisma db push     # 3. create the database tables
+npm run seed           # 4. sample rooms, menus and experiences (safe to re-run)
+npm run dev            # 5. open http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+### 🔑 First admin login
 
-### First admin login
-
-If no admin account exists, signing in at `/admin-login` creates a default one:
+If no admin exists yet, signing in at **`/admin-login`** creates one:
 
 | Username | Password |
-| --- | --- |
+| :---: | :---: |
 | `admin` | `admin` |
 
-> ⚠️ **Change this password before the site goes live**: sign in, open the Account page (`/user`) and use the password form. The default values are public in the code (`src/lib/users.ts`).
+> [!WARNING]
+> **Change this password before going live.** Sign in, open **Account** (`/user`) and use the password form. The default values are public in `src/lib/users.ts`.
 
 ---
 
-## Environment variables
+## 🔐 Environment variables
 
 Create a `.env` file in the project root. **Never commit it.**
 
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `DATABASE_URL` | ✅ | PostgreSQL connection string. |
-| `AUTH_SECRET` | ✅ | Secret for signing sessions. Generate one with `npx auth secret`. |
-| `APP_URL` | Recommended | The public site address, used for links in emails. Defaults to `http://localhost:3000`. |
-| `REQUIRE_EMAIL_VERIFICATION` | Optional | Set to `true` to make new guests verify their email before signing in. |
-| `GMAIL_USER` | Optional | The Gmail address emails are sent from. |
-| `GMAIL_APP_PASSWORD` | Optional | A Gmail [app password](https://support.google.com/accounts/answer/185833) for that address. |
-| `CLOUDINARY_CLOUD_NAME` | Optional | Cloudinary account for photo uploads. |
-| `CLOUDINARY_API_KEY` | Optional | 〃 |
-| `CLOUDINARY_API_SECRET` | Optional | 〃 |
+| Variable | | Purpose |
+| --- | :---: | --- |
+| `DATABASE_URL` | ✅ | PostgreSQL connection string |
+| `AUTH_SECRET` | ✅ | Signs sessions. Generate one with `npx auth secret` |
+| `APP_URL` | ⭐ | The public address, used for links in emails |
+| `REQUIRE_EMAIL_VERIFICATION` | ➖ | `true` = new guests must verify their email |
+| `GMAIL_USER` · `GMAIL_APP_PASSWORD` | ➖ | Sends emails through Gmail ([app password](https://support.google.com/accounts/answer/185833)) |
+| `CLOUDINARY_CLOUD_NAME` · `_API_KEY` · `_API_SECRET` | ➖ | Stores uploaded photos on Cloudinary |
 
-**Without Gmail settings**, emails (booking received, payment received, replies) are printed in the terminal instead of sent. **Without Cloudinary settings**, uploaded photos are saved under `public/uploads/`. That is fine for development, but on hosts with a temporary file system (such as Vercel), use Cloudinary.
+<sub>✅ required · ⭐ recommended · ➖ optional</sub>
+
+> [!TIP]
+> **Works without the extras.** Without Gmail, emails are printed in the terminal. Without Cloudinary, photos are saved in `public/uploads/`. That's fine for development, but use Cloudinary when you deploy.
+
+<details>
+<summary><b>📄 Example <code>.env</code></b></summary>
 
 ```env
 DATABASE_URL="postgresql://user:password@host/dbname?sslmode=require"
@@ -138,91 +117,136 @@ CLOUDINARY_API_KEY=""
 CLOUDINARY_API_SECRET=""
 ```
 
+</details>
+
 ---
 
-## Scripts
+## 🛠️ Scripts
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Start the development server. |
-| `npm run build` | Build for production. |
-| `npm start` | Run the production build. |
-| `npm run lint` | Run ESLint. |
-| `npm run seed` | Add sample content (`prisma/seed.mjs`). Safe to run more than once. |
-| `npm run photos:to-cloud` | Move any photo the database still points at inside the project (`public/images`, `public/uploads`) to Cloudinary and update the database links. Add `-- --dry` to only list them. |
-| `npx prisma db push` | Apply changes in `prisma/schema.prisma` to the database. |
-| `npx prisma studio` | Browse the database in your browser. |
-| `npx tsc --noEmit` | Type-check the project. |
+| `npm run dev` | 🔥 Start the dev server |
+| `npm run build` · `npm start` | 📦 Build and run for production |
+| `npm run lint` | 🧹 Run ESLint |
+| `npm run seed` | 🌱 Add sample content (safe to re-run) |
+| `npm run photos:to-cloud` | ☁️ Move photos stored in the project to Cloudinary (add `-- --dry` to preview) |
+| `npx prisma db push` | 🗄️ Apply `schema.prisma` changes to the database |
+| `npx prisma studio` | 👀 Browse the database in the browser |
+| `npx tsc --noEmit` | ✅ Type-check the project |
 
-> The project uses `prisma db push` (no migration files). After changing the schema, run `npx prisma db push` and restart the dev server so it picks up the new Prisma client.
+> [!NOTE]
+> The project uses `prisma db push`, so there are no migration files. After changing the schema, run it and then restart the dev server.
 
 ---
 
-## Project structure
+## 🧭 How it works
+
+### 📅 The life of a booking
+
+```mermaid
+flowchart LR
+    A([🧳 Guest books online]) --> B[⏳ Pending]
+    W([🚶 Walk-in at the desk]) --> C
+    B -->|Staff assign a room| C[✅ Confirmed]
+    B -->|Cancelled| X[❌ Cancelled]
+    C -->|Mark paid| D[💳 Paid + receipt emailed]
+    C -->|Guest or staff cancel| X
+```
+
+Every booking that isn't cancelled holds a room from check-in to check-out. The check-out day is free again.
+
+### 💰 Pricing
+
+```text
+Total = room price × nights
+      + meal plan per guest per night × guests × nights
+      + extras (laundry, transfers, …)
+```
+
+- **Meals:** the meal plan price is split evenly across its meals. A chosen dish's own price replaces that meal's share.
+- **Extras:** they're listed separately on the bill.
+- **Currency:** all prices are in **Sri Lankan rupees (LKR)**.
+
+### 🎛️ Site switches
+
+| Switch | What visitors see |
+| --- | --- |
+| ⏸️ **Pause online booking** | The site stays open, but the booking forms are replaced by a "call or WhatsApp us" message |
+| 🚧 **Maintenance mode** | A "We'll be back soon" page. Admins can still use everything |
+
+### 📍 The map
+Paste coordinates or a full Google Maps link into **Site settings → Map location**. The map is Google's free embed, so no API key is needed. Without a pin, it searches for the saved address.
+
+### 🌙 Dark mode
+Components use light-mode classes, and `globals.css` restyles them under `<html data-theme="dark">`. Sections that are always dark carry `theme-fixed`.
+
+<details>
+<summary><b>🗂️ Project structure</b></summary>
 
 ```text
 prisma/
-  schema.prisma        Database models
-  seed.mjs             Sample content
-public/images/         Site photos (hero and placeholders)
+├─ schema.prisma            Database models
+├─ seed.mjs                 Sample content
+└─ move-photos-to-cloudinary.mjs
+public/images/              Site photos (hero, sign-in)
 src/
-  app/                 Pages and routes (App Router)
-    page.tsx           Home
-    rooms/  book/  dining/  experiences/  contact/  user/
-    admin/             Admin panel (bookings, rooms, dining, messages, settings, …)
-    actions/           Server Actions (booking, admin changes, contact, requests)
-    maintenance/       Shown to visitors while maintenance mode is on
-  components/          UI pieces (booking form, sliders, admin forms, nav, footer, …)
-  lib/                 Shared logic
-    booking.ts         Prices, meal plans, date checks, LKR formatting
-    booking-bill.ts    Recalculates a booking's bill (room, meals, extras)
-    availability.ts    Booked rooms per date range
-    hotel.ts           Site settings with sensible defaults
-    map.ts             Map pin parsing, Google Maps links, nearby distances
-    mail.ts            Email templates and sending
-    uploads.ts         Photo uploads (Cloudinary or local)
-  auth.ts, auth.config.ts   NextAuth setup and route protection
-  proxy.ts             Runs auth and maintenance checks on every request
+├─ app/                     Pages and routes (App Router)
+│  ├─ page.tsx              Home
+│  ├─ rooms/ book/ dining/ experiences/ contact/ user/
+│  ├─ admin/                Admin panel
+│  ├─ actions/              Server Actions
+│  └─ maintenance/          Shown during maintenance mode
+├─ components/              UI building blocks
+├─ lib/
+│  ├─ booking.ts            Prices, meal plans, date rules
+│  ├─ booking-bill.ts       Recalculates a bill
+│  ├─ availability.ts       Rooms booked per date range
+│  ├─ hotel.ts              Site settings with defaults
+│  ├─ map.ts                Map pin, Google Maps links, distances
+│  ├─ mail.ts               Email templates and sending
+│  └─ uploads.ts            Photo uploads (Cloudinary or local)
+├─ auth.ts · auth.config.ts NextAuth and route protection
+└─ proxy.ts                 Auth and maintenance check on every request
 ```
 
----
+</details>
 
-## How things work
+<details>
+<summary><b>🧱 Tech stack</b></summary>
 
-**Booking flow.**
-1. A guest picks dates, guests and a meal plan, and the booking is saved as *pending*.
-2. Staff confirm it and assign a room number.
-3. When payment is marked, the guest is emailed a receipt.
+| Area | Choice |
+| --- | --- |
+| Framework | Next.js 16: App Router, Server Components, Server Actions, Turbopack |
+| UI | React 19, Tailwind CSS v4, Poppins |
+| Database | PostgreSQL (Neon) via Prisma 5 |
+| Auth | NextAuth v5 (credentials), bcrypt |
+| Validation | Zod 4 |
+| Email | Nodemailer + Gmail |
+| Photos | Cloudinary (local fallback) |
 
-Every booking that is not cancelled holds a room unit from check-in to check-out (the check-out day is free again).
+> This Next.js version has breaking changes from older releases. Check the guides in `node_modules/next/dist/docs/` before changing framework-level code.
 
-**Pricing.**
-- A stay costs the room price × nights, plus meals.
-- The meal plan price is split evenly across the meals it includes. When a guest picks a dish, that dish's price replaces its share.
-- Extra charges added later (laundry, transfers, …) are listed separately on the bill.
-
-**Site switches.**
-- **Pause online booking:** guests can still browse, but see a message with the phone number and WhatsApp instead of the booking form.
-- **Maintenance mode:** visitors see a maintenance page, while admins can still use the whole site.
-
-**Map.** Paste coordinates or a full Google Maps link into *Site settings → Map location*. The Contact page uses Google's free embedded map, so no API key is needed. Until a location is saved, the map searches for the address.
-
-**Dark mode.** Components are written with light-mode classes. `globals.css` restyles them when `<html data-theme="dark">` is set. Sections that are always dark (photo heroes, the footer) carry the class `theme-fixed`.
-
-**Prices** are in Sri Lankan rupees (LKR).
+</details>
 
 ---
 
-## Deployment
+## ☁️ Deployment
 
-The app runs on any Node.js host that supports Next.js, such as [Vercel](https://vercel.com).
+Runs on any Node.js host that supports Next.js, for example [Vercel](https://vercel.com).
 
-1. Add the environment variables from above to your host. Set `APP_URL` to the live address.
-2. Use Cloudinary for photos (the local `public/uploads` folder is not kept between deploys on most hosts).
-3. Run `npx prisma db push` against the production database once.
-4. Build with `npm run build` and start with `npm start`, or let your host do it.
-5. Sign in to `/admin-login` and **change the default admin password** on the Account page (`/user`). Then fill in *Site settings* (contact details, social links, map location).
+- [ ] Add the environment variables, with `APP_URL` set to the live address
+- [ ] Set up **Cloudinary** for photos (local uploads aren't kept between deploys)
+- [ ] Run `npx prisma db push` once against the production database
+- [ ] Build with `npm run build`, start with `npm start` (or let the host do it)
+- [ ] Sign in at `/admin-login` and **change the default admin password**
+- [ ] Fill in **Site settings**: contacts, social links, map location
 
 ---
 
-© N34 Mirissa. All rights reserved.
+<div align="center">
+
+**Made with 🌴 for the south coast of Sri Lanka**
+
+© N34 Mirissa · All rights reserved
+
+</div>
