@@ -2,6 +2,7 @@ import Link from "next/link";
 import { auth, signOut } from "@/auth";
 import { redirect } from "next/navigation";
 import AdminClock from "@/components/admin/AdminClock";
+import ConfirmSubmitButton from "@/components/ConfirmSubmitButton";
 import ThemeToggle from "@/components/ThemeToggle";
 import { BOOKING_SCOPES } from "@/lib/admin-bookings";
 import { getSiteSettings } from "@/lib/hotel";
@@ -91,9 +92,17 @@ export default async function AdminLayout({
             'use server';
             await signOut({ redirectTo: '/admin-login' });
           }}>
-            <button className="w-full bg-white/10 hover:bg-white/20 text-white text-sm font-medium py-2 rounded-lg transition-colors">
+            {/* Asks first, so a stray click does not end the session in the middle of work. */}
+            <ConfirmSubmitButton
+              tone="primary"
+              title="Sign out?"
+              confirmMessage="You will leave the admin panel and need to sign in again to manage bookings."
+              confirmLabel="Sign out"
+              cancelLabel="Stay signed in"
+              className="w-full bg-white/10 hover:bg-white/20 text-white text-sm font-medium py-2 rounded-lg transition-colors"
+            >
               Sign Out
-            </button>
+            </ConfirmSubmitButton>
           </form>
         </div>
       </aside>
